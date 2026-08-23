@@ -74,11 +74,9 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
    - From `backend/`: `./mvnw spring-boot:run` (Windows: `mvnw.cmd spring-boot:run`)
    - Health check: `GET http://localhost:8080/actuator/health`
    - Tests: `./mvnw test`
-5. Frontend (Phase 2+): commands added when the Angular app is scaffolded
+5. Frontend (Phase 2+): from `frontend/`: `npm install` then `npm start` → http://localhost:4200
 
-### Temporary ownership header (courses/assignments)
-
-Until JWT auth merges, course and assignment APIs scope data with the `X-User-Id` header (UUID). Example: `X-User-Id: 11111111-1111-1111-1111-111111111111`. Missing/invalid values return `401`. Cross-user access returns `404`. `user_id` columns have no FK to a users table yet (TODO after auth).
+Course and assignment APIs require `Authorization: Bearer <JWT>` from `/api/auth/login` or `/api/auth/register`. Cross-user access returns `404`.
 
 ## Authentication
 

@@ -16,18 +16,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prioritize.model.Assignment;
+import com.prioritize.model.AuthProvider;
 import com.prioritize.model.Course;
 import com.prioritize.model.Difficulty;
+import com.prioritize.model.Role;
+import com.prioritize.model.User;
 import com.prioritize.repository.AssignmentRepository;
 import com.prioritize.repository.CourseRepository;
-import com.prioritize.security.CurrentUserService;
+import com.prioritize.repository.UserRepository;
+import com.prioritize.security.JwtService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -49,16 +55,31 @@ class CourseAssignmentControllerTest {
     @Autowired
     private AssignmentRepository assignmentRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private JwtService jwtService;
+
+    private String tokenA;
+    private String tokenB;
+
     @BeforeEach
-    void cleanDatabase() {
+    void setUp() {
         assignmentRepository.deleteAll();
         courseRepository.deleteAll();
+        userRepository.deleteAll();
+
+        userRepository.save(localUser(USER_A, "alice@example.com", "Alice"));
+        userRepository.save(localUser(USER_B, "bob@example.com", "Bob"));
+        tokenA = jwtService.generateToken(USER_A, "alice@example.com");
+        tokenB = jwtService.generateToken(USER_B, "bob@example.com");
     }
 
     @Test
     void courseCrudAndOwnershipIsolation() throws Exception {
         MvcResult createResult = mockMvc.perform(post("/api/courses")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString())
+                        .with(bearer(tokenA))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Data Structures","courseCode":"CS201","term":"Fall 2026"}
@@ -70,17 +91,15 @@ class CourseAssignmentControllerTest {
 
         String courseId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/api/courses")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString()))
+        mockMvc.perform(get("/api/courses").with(bearer(tokenA)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
 
-        mockMvc.perform(get("/api/courses/{id}", courseId)
-                        .header(CurrentUserService.USER_ID_HEADER, USER_B.toString()))
+        mockMvc.perform(get("/api/courses/{id}", courseId).with(bearer(tokenB)))
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(put("/api/courses/{id}", courseId)
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString())
+                        .with(bearer(tokenA))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Data Structures II","courseCode":"CS202","term":"Spring 2027"}
@@ -88,12 +107,10 @@ class CourseAssignmentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Data Structures II"));
 
-        mockMvc.perform(delete("/api/courses/{id}", courseId)
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString()))
+        mockMvc.perform(delete("/api/courses/{id}", courseId).with(bearer(tokenA)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/courses/{id}", courseId)
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString()))
+        mockMvc.perform(get("/api/courses/{id}", courseId).with(bearer(tokenA)))
                 .andExpect(status().isNotFound());
     }
 
@@ -128,7 +145,7 @@ class CourseAssignmentControllerTest {
         assignmentRepository.save(overdue);
 
         mockMvc.perform(post("/api/assignments")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString())
+                        .with(bearer(tokenA))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -146,34 +163,30 @@ class CourseAssignmentControllerTest {
                 .andExpect(jsonPath("$.difficulty").value("HARD"));
 
         mockMvc.perform(get("/api/assignments")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString())
+                        .with(bearer(tokenA))
                         .param("courseId", course.getId().toString())
                         .param("completed", "false"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)));
 
-        mockMvc.perform(get("/api/assignments/upcoming")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString()))
+        mockMvc.perform(get("/api/assignments/upcoming").with(bearer(tokenA)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Upcoming Homework"));
 
-        mockMvc.perform(get("/api/assignments/overdue")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString()))
+        mockMvc.perform(get("/api/assignments/overdue").with(bearer(tokenA)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Overdue Lab"));
 
-        mockMvc.perform(get("/api/assignments/prioritized")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString()))
+        mockMvc.perform(get("/api/assignments/prioritized").with(bearer(tokenA)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[0].reasons").isArray());
 
-        mockMvc.perform(get("/api/assignments/{id}", upcoming.getId())
-                        .header(CurrentUserService.USER_ID_HEADER, USER_B.toString()))
+        mockMvc.perform(get("/api/assignments/{id}", upcoming.getId()).with(bearer(tokenB)))
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(put("/api/assignments/{id}", upcoming.getId())
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString())
+                        .with(bearer(tokenA))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"completed": true, "actualHours": 2.5, "personalPriority": 5}
@@ -184,7 +197,7 @@ class CourseAssignmentControllerTest {
     }
 
     @Test
-    void missingUserHeaderReturnsUnauthorized() throws Exception {
+    void missingAuthReturnsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/courses"))
                 .andExpect(status().isUnauthorized());
     }
@@ -192,11 +205,30 @@ class CourseAssignmentControllerTest {
     @Test
     void createCourseRequiresName() throws Exception {
         mockMvc.perform(post("/api/courses")
-                        .header(CurrentUserService.USER_ID_HEADER, USER_A.toString())
+                        .with(bearer(tokenA))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"courseCode":"CS101"}
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    private static User localUser(UUID id, String email, String firstName) {
+        User user = new User();
+        user.setId(id);
+        user.setFirstName(firstName);
+        user.setLastName("Test");
+        user.setEmail(email);
+        user.setPasswordHash("$2a$10$placeholderhashnotusedforjwttestsxxxxxx");
+        user.setAuthProvider(AuthProvider.LOCAL);
+        user.setRole(Role.USER);
+        return user;
+    }
+
+    private static RequestPostProcessor bearer(String token) {
+        return request -> {
+            request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+            return request;
+        };
     }
 }
