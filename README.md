@@ -87,6 +87,17 @@ Course and assignment APIs require `Authorization: Bearer <JWT>` from `/api/auth
 - **Local:** register / login with email and password (BCrypt hashes)
 - **Google:** “Continue with Google” via Spring Security OAuth2 Login; app issues the same JWT
 
+### Google OAuth setup (local)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create an OAuth 2.0 Client ID (Web application)
+2. Add authorized redirect URI: `http://localhost:8080/login/oauth2/code/google`
+3. Copy client ID/secret into `.env`:
+   - `GOOGLE_OAUTH_ENABLED=true`
+   - `GOOGLE_CLIENT_ID=...`
+   - `GOOGLE_CLIENT_SECRET=...`
+   - `APP_OAUTH_SUCCESS_REDIRECT=http://localhost:4200/auth/callback`
+4. Restart the backend, then use **Continue with Google** on the login/register pages
+
 Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET` — never commit real values.
 
 ## Canvas Integration

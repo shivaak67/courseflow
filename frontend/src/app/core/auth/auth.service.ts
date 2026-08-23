@@ -48,6 +48,15 @@ export class AuthService {
     );
   }
 
+  startGoogleSignIn(): void {
+    window.location.href = `${environment.apiBaseUrl}/oauth2/authorization/google`;
+  }
+
+  completeOAuthLogin(token: string): Observable<UserDto> {
+    localStorage.setItem(TOKEN_KEY, token);
+    return this.me();
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

@@ -1,0 +1,9 @@
+<section class="callback">
+  <p class="callback__brand">Prioritize</p>
+  @if (error(); as message) {
+    <p class="auth-error" role="alert">{{ message }}</p>
+    <a routerLink="/auth/login">Back to login</a>
+  } @else {
+    <p>Finishing Google sign-in…</p>
+  }
+</section>

@@ -1,20 +1,30 @@
 import { Component } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-work-queue',
   standalone: true,
-  imports: [MatCardModule],
-  template: `
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Work Queue</mat-card-title>
-        <mat-card-subtitle>Placeholder — prioritized list comes later</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p>“What should I work on?” will use /api/assignments/prioritized.</p>
-      </mat-card-content>
-    </mat-card>
-  `,
+  imports: [MatIconModule],
+  templateUrl: './work-queue.component.html',
+  styleUrl: './work-queue.component.scss',
 })
-export class WorkQueueComponent {}
+export class WorkQueueComponent {
+  readonly preview = [
+    {
+      title: 'Operating Systems Project',
+      course: 'CS 350',
+      due: 'Due in 2 days',
+      level: 'HIGH',
+      effort: '6h',
+      reasons: ['Due soon', 'High point value', 'Marked HARD'],
+    },
+    {
+      title: 'Database Homework 4',
+      course: 'CS 440',
+      due: 'Due in 4 days',
+      level: 'MEDIUM',
+      effort: '2h',
+      reasons: ['Moderate urgency', 'Personal priority 4'],
+    },
+  ];
+}

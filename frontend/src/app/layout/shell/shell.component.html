@@ -1,35 +1,53 @@
-<mat-sidenav-container class="shell">
-  <mat-sidenav mode="side" opened class="shell__nav">
-    <div class="shell__brand">Prioritize</div>
-    <mat-nav-list>
+<div class="shell">
+  <aside class="shell__rail" aria-label="Primary">
+    <a class="shell__brand" routerLink="/dashboard">
+      <span class="shell__mark" aria-hidden="true">P</span>
+      <span class="shell__wordmark">Prioritize</span>
+    </a>
+
+    <nav class="shell__nav">
       @for (item of navItems; track item.path) {
         <a
-          mat-list-item
+          class="shell__link"
           [routerLink]="item.path"
           routerLinkActive="shell__link--active"
         >
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
+          <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
         </a>
       }
-    </mat-nav-list>
-  </mat-sidenav>
+    </nav>
 
-  <mat-sidenav-content>
-    <mat-toolbar color="primary" class="shell__toolbar">
-      <span class="shell__title">Prioritize</span>
-      <span class="shell__spacer"></span>
-      @if (auth.isAuthenticated()) {
-        <span class="shell__user">{{ auth.currentUser()?.email }}</span>
-        <button mat-button type="button" (click)="logout()">Log out</button>
-      } @else {
-        <a mat-button routerLink="/auth/login">Log in</a>
-        <a mat-button routerLink="/auth/register">Register</a>
-      }
-    </mat-toolbar>
+    <div class="shell__foot">
+      <p class="shell__foot-label">Focus mode</p>
+      <p class="shell__foot-copy">Rank work by deadline, weight, and effort.</p>
+    </div>
+  </aside>
+
+  <div class="shell__stage">
+    <header class="shell__top">
+      <div class="shell__top-copy">
+        <p class="shell__eyebrow">Academic command center</p>
+        <p class="shell__greeting">Stay ahead of the week</p>
+      </div>
+      <div class="shell__actions">
+        @if (auth.currentUser(); as user) {
+          <div class="shell__identity">
+            <span class="shell__avatar" aria-hidden="true">{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
+            <div class="shell__identity-text">
+              <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+              <span>{{ user.email }}</span>
+            </div>
+          </div>
+          <button mat-stroked-button type="button" class="shell__logout" (click)="logout()">
+            Log out
+          </button>
+        }
+      </div>
+    </header>
 
     <main class="shell__content">
       <router-outlet />
     </main>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  </div>
+</div>

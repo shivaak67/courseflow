@@ -1,0 +1,36 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Recommended order</p>
+      <h1 class="prio-title">What should I work on?</h1>
+      <p class="prio-lede">
+        Ranked by urgency, weight, difficulty, effort, and your personal priority — with reasons you can trust.
+      </p>
+    </div>
+  </header>
+
+  <div class="queue">
+    @for (item of preview; track item.title; let i = $index) {
+      <article class="queue__item" [style.animation-delay.ms]="i * 90">
+        <div class="queue__rank">{{ i + 1 }}</div>
+        <div class="queue__body">
+          <div class="queue__top">
+            <h2>{{ item.title }}</h2>
+            <span class="queue__level" [attr.data-level]="item.level">{{ item.level }}</span>
+          </div>
+          <p class="queue__meta">{{ item.course }} · {{ item.due }} · {{ item.effort }} estimated</p>
+          <ul class="queue__reasons">
+            @for (reason of item.reasons; track reason) {
+              <li>{{ reason }}</li>
+            }
+          </ul>
+        </div>
+      </article>
+    }
+  </div>
+
+  <p class="queue__note">
+    <mat-icon>info</mat-icon>
+    Preview ranking — live scores appear once assignments sync from Canvas or are added manually.
+  </p>
+</section>

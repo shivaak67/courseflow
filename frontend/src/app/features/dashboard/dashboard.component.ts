@@ -1,20 +1,20 @@
 import { Component } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
+import { RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [MatCardModule],
-  template: `
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Dashboard</mat-card-title>
-        <mat-card-subtitle>Placeholder — summary UI comes later</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p>Due today, overdue, and workload widgets will land here.</p>
-      </mat-card-content>
-    </mat-card>
-  `,
+  imports: [RouterLink, MatButtonModule, MatIconModule],
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent {}
+export class DashboardComponent {
+  readonly highlights = [
+    { label: 'Due today', value: '—', hint: 'Sync or add assignments' },
+    { label: 'This week', value: '—', hint: 'Workload appears after import' },
+    { label: 'Overdue', value: '—', hint: 'Nothing tracked yet' },
+    { label: 'Hours left', value: '—', hint: 'Estimated remaining effort' },
+  ];
+}

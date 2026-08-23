@@ -1,0 +1,30 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Catalog</p>
+      <h1 class="prio-title">Courses</h1>
+      <p class="prio-lede">
+        Manage synced Canvas courses or add your own when you want a lighter setup.
+      </p>
+    </div>
+    <button mat-flat-button color="primary" type="button" class="page__cta">
+      <mat-icon>add</mat-icon>
+      Add course
+    </button>
+  </header>
+
+  <div class="courses">
+    @for (course of samples; track course.code) {
+      <article class="course">
+        <div class="course__code">{{ course.code }}</div>
+        <div>
+          <h2>{{ course.name }}</h2>
+          <p>{{ course.term }} · {{ course.load }} load</p>
+        </div>
+        <mat-icon class="course__chevron">chevron_right</mat-icon>
+      </article>
+    }
+  </div>
+
+  <p class="courses__note">Sample rows for layout — live course list connects to the courses API next.</p>
+</section>

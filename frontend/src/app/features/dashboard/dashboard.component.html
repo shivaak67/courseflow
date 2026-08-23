@@ -1,0 +1,52 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Overview</p>
+      <h1 class="prio-title">Dashboard</h1>
+      <p class="prio-lede">
+        A calm snapshot of urgency, course load, and what needs attention before the weekend.
+      </p>
+    </div>
+    <a mat-flat-button color="primary" routerLink="/work-queue" class="page__cta">
+      <mat-icon>bolt</mat-icon>
+      Open work queue
+    </a>
+  </header>
+
+  <div class="dash__metrics">
+    @for (item of highlights; track item.label) {
+      <article class="metric">
+        <p class="metric__label">{{ item.label }}</p>
+        <p class="metric__value">{{ item.value }}</p>
+        <p class="metric__hint">{{ item.hint }}</p>
+      </article>
+    }
+  </div>
+
+  <div class="dash__split">
+    <article class="surface">
+      <div class="surface__head">
+        <h2>Upcoming focus</h2>
+        <span>Next deadlines</span>
+      </div>
+      <div class="prio-empty">
+        <div class="prio-empty__mark"><mat-icon>event_upcoming</mat-icon></div>
+        <h3>No assignments yet</h3>
+        <p>Connect Canvas or add a course manually to populate your week.</p>
+      </div>
+    </article>
+
+    <article class="surface">
+      <div class="surface__head">
+        <h2>Course pressure</h2>
+        <span>Relative load</span>
+      </div>
+      <div class="bars" aria-hidden="true">
+        <div class="bars__row"><span>Systems</span><i style="--w: 72%"></i></div>
+        <div class="bars__row"><span>Databases</span><i style="--w: 48%"></i></div>
+        <div class="bars__row"><span>Writing</span><i style="--w: 31%"></i></div>
+      </div>
+      <p class="surface__note">Preview bars — live workload arrives with your data.</p>
+    </article>
+  </div>
+</section>

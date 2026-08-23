@@ -1,0 +1,100 @@
+.page__header {
+  margin-bottom: 1.4rem;
+}
+
+.surface {
+  padding: 1.15rem;
+  border: 1px solid var(--prio-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.cal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.cal__head h2 {
+  margin: 0;
+  font-family: var(--prio-font-display);
+  font-size: 1.4rem;
+}
+
+.cal__head span {
+  color: var(--prio-ink-soft);
+  font-size: 0.82rem;
+}
+
+.cal__weekdays,
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.cal__weekdays {
+  margin-bottom: 0.45rem;
+  color: var(--prio-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cal__cell {
+  min-height: 4.6rem;
+  padding: 0.45rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(16, 35, 42, 0.03);
+}
+
+.cal__cell span {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cal__cell em {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  background: rgba(11, 110, 106, 0.14);
+  color: var(--prio-teal-deep);
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.cal__cell--accent {
+  border-color: rgba(11, 110, 106, 0.28);
+  background: rgba(11, 110, 106, 0.06);
+}
+
+.cal__note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  color: var(--prio-ink-soft);
+  font-size: 0.88rem;
+}
+
+.cal__note mat-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--prio-teal);
+}
+
+@media (max-width: 720px) {
+  .cal__cell {
+    min-height: 3.4rem;
+  }
+
+  .cal__cell em {
+    display: none;
+  }
+}

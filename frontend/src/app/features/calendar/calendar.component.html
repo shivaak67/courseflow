@@ -1,0 +1,41 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Schedule</p>
+      <h1 class="prio-title">Calendar</h1>
+      <p class="prio-lede">
+        See deadlines by day, open an assignment, and mark it complete without leaving the week view.
+      </p>
+    </div>
+  </header>
+
+  <div class="cal surface">
+    <div class="cal__head">
+      <h2>August 2026</h2>
+      <span>Preview layout</span>
+    </div>
+    <div class="cal__weekdays">
+      @for (day of days; track day) {
+        <span>{{ day }}</span>
+      }
+    </div>
+    <div class="cal__grid">
+      @for (n of cells; track n) {
+        <div class="cal__cell" [class.cal__cell--accent]="n === 22 || n === 25">
+          <span>{{ n }}</span>
+          @if (n === 22) {
+            <em>OS Project</em>
+          }
+          @if (n === 25) {
+            <em>DB HW</em>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <p class="cal__note">
+    <mat-icon>filter_alt</mat-icon>
+    Course filters and live events arrive with the calendar feature branch.
+  </p>
+</section>
