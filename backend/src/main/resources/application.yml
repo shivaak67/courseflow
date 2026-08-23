@@ -22,3 +22,26 @@ app:
   jwt:
     secret: ${JWT_SECRET:dev-only-change-me-to-a-long-random-secret}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+prioritize:
+  scoring:
+    weights:
+      urgency: 0.35
+      points: 0.20
+      difficulty: 0.15
+      workload: 0.15
+      personal-priority: 0.15
+    thresholds:
+      critical: 80
+      high: 60
+      medium: 40
+    defaults:
+      no-due-date-urgency: 35
+      missing-points: 40
+      missing-difficulty: 50
+      missing-workload: 40
+      missing-personal-priority: 50
+      max-workload-hours: 20
+      max-absolute-points: 100
+      urgency-horizon-days: 14
+      urgency-floor: 15
