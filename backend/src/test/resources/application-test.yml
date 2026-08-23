@@ -21,3 +21,6 @@ spring:
 app:
   cors:
     origins: http://localhost:4200
+  jwt:
+    secret: test-jwt-secret-key-at-least-32-chars-long
+    expiration-ms: 86400000

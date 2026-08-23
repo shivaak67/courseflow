@@ -19,3 +19,6 @@ management:
 app:
   cors:
     origins: ${APP_CORS_ORIGINS:http://localhost:4200}
+  jwt:
+    secret: ${JWT_SECRET:dev-only-change-me-to-a-long-random-secret}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
