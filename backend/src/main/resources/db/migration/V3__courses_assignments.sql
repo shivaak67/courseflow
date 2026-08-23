@@ -1,5 +1,4 @@
--- Courses and assignments (user_id UUID without FK until auth users table lands).
--- Unique (user_id, canvas_*) allows multiple NULLs on PostgreSQL; H2 allows one NULL per user.
+-- Courses and assignments (after users table from V2).
 CREATE TABLE courses (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
@@ -9,6 +8,8 @@ CREATE TABLE courses (
     term VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_courses_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT uq_courses_user_canvas_id UNIQUE (user_id, canvas_course_id)
 );
 
@@ -33,6 +34,8 @@ CREATE TABLE assignments (
     priority_level VARCHAR(20),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_assignments_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_assignments_course
         FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
     CONSTRAINT uq_assignments_user_canvas_id UNIQUE (user_id, canvas_assignment_id),
