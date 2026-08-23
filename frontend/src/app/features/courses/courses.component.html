@@ -7,24 +7,32 @@
         Manage synced Canvas courses or add your own when you want a lighter setup.
       </p>
     </div>
-    <button mat-flat-button color="primary" type="button" class="page__cta">
-      <mat-icon>add</mat-icon>
-      Add course
-    </button>
   </header>
 
-  <div class="courses">
-    @for (course of samples; track course.code) {
-      <article class="course">
-        <div class="course__code">{{ course.code }}</div>
-        <div>
-          <h2>{{ course.name }}</h2>
-          <p>{{ course.term }} · {{ course.load }} load</p>
-        </div>
-        <mat-icon class="course__chevron">chevron_right</mat-icon>
-      </article>
-    }
-  </div>
+  @if (error(); as message) {
+    <p class="courses__note" role="alert">{{ message }}</p>
+  }
 
-  <p class="courses__note">Sample rows for layout — live course list connects to the courses API next.</p>
+  @if (loading()) {
+    <p class="courses__note">Loading courses…</p>
+  } @else if (courses().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>school</mat-icon></div>
+      <h3>No courses yet</h3>
+      <p>Use Sync Canvas on the dashboard to import courses, or add them manually later.</p>
+    </div>
+  } @else {
+    <div class="courses">
+      @for (course of courses(); track course.id) {
+        <article class="course">
+          <div class="course__code">{{ course.courseCode || 'Course' }}</div>
+          <div>
+            <h2>{{ course.name }}</h2>
+            <p>{{ course.term || 'No term' }}{{ course.canvasCourseId ? ' · Synced' : ' · Manual' }}</p>
+          </div>
+          <mat-icon class="course__chevron">chevron_right</mat-icon>
+        </article>
+      }
+    </div>
+  }
 </section>
