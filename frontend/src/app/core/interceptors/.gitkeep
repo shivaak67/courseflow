@@ -1,1 +1,1 @@
-
+/** HTTP interceptors (e.g. Bearer token) — Agent A will add auth interceptor. */

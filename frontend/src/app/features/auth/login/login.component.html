@@ -1,0 +1,32 @@
+<mat-card class="auth-card">
+  <mat-card-header>
+    <mat-card-title>Log in</mat-card-title>
+    <mat-card-subtitle>Sign in to Prioritize</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @if (errorMessage(); as message) {
+      <p class="auth-error" role="alert">{{ message }}</p>
+    }
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="email" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+        Log in
+      </button>
+    </form>
+  </mat-card-content>
+  <mat-card-actions align="end">
+    <a mat-button routerLink="/auth/register">Need an account?</a>
+  </mat-card-actions>
+</mat-card>
