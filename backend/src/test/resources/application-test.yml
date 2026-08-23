@@ -27,3 +27,7 @@ app:
   oauth:
     google:
       enabled: false
+  canvas:
+    mock-enabled: true
+    base-url: https://canvas.test
+    api-token: test-token

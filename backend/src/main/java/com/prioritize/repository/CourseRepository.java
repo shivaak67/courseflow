@@ -15,4 +15,6 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     Optional<Course> findByIdAndUserId(UUID id, UUID userId);
 
     boolean existsByIdAndUserId(UUID id, UUID userId);
+
+    Optional<Course> findByUserIdAndCanvasCourseId(UUID userId, String canvasCourseId);
 }

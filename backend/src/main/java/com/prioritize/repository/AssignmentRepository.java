@@ -66,4 +66,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
             ORDER BY a.dueDate ASC NULLS LAST, a.title ASC
             """)
     List<Assignment> findOpenOrderedByDueDate(@Param("userId") UUID userId);
+
+    @Query("""
+            SELECT a FROM Assignment a
+            JOIN FETCH a.course
+            WHERE a.userId = :userId
+              AND a.canvasAssignmentId = :canvasAssignmentId
+            """)
+    Optional<Assignment> findByUserIdAndCanvasAssignmentId(
+            @Param("userId") UUID userId,
+            @Param("canvasAssignmentId") String canvasAssignmentId);
 }

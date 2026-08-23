@@ -102,7 +102,10 @@ Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET` — never comm
 
 ## Canvas Integration
 
-Uses a `CanvasClient` abstraction. Development may use an API token from the environment; Canvas OAuth can replace tokens later without redesigning sync.
+Uses a `CanvasClient` abstraction with an HTTP implementation and a mock client for local demos.
+- Real sync: set `CANVAS_BASE_URL` and `CANVAS_API_TOKEN`, keep `CANVAS_MOCK_ENABLED=false`
+- Mock sync: set `CANVAS_MOCK_ENABLED=true` (no Canvas token required)
+- Endpoint: `POST /api/canvas/sync` (JWT required) upserts courses and assignments by Canvas IDs
 
 ## Priority Engine
 

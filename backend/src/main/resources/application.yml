@@ -37,6 +37,10 @@ app:
     success-redirect: ${APP_OAUTH_SUCCESS_REDIRECT:http://localhost:4200/auth/callback}
     google:
       enabled: ${GOOGLE_OAUTH_ENABLED:false}
+  canvas:
+    base-url: ${CANVAS_BASE_URL:}
+    api-token: ${CANVAS_API_TOKEN:}
+    mock-enabled: ${CANVAS_MOCK_ENABLED:false}
 
 prioritize:
   scoring:
