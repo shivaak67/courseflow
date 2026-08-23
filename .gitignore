@@ -49,6 +49,9 @@ coverage/
 # Docker
 *.log
 
+# Local tooling (portable Maven, etc.)
+.tools/
+
 # Misc
 *.tmp
 *.temp

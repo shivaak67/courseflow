@@ -69,10 +69,12 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
 1. Clone the repository
 2. Copy `.env.example` to `.env` and fill in values
 3. Start PostgreSQL and create the `prioritize` database
-4. Run the backend (Phase 1+)
-5. Run the frontend (Phase 2+)
-
-Detailed commands will be added when each app scaffold is implemented.
+4. Backend (Phase 1+):
+   - Requires JDK 21+
+   - From `backend/`: `./mvnw spring-boot:run` (Windows: `mvnw.cmd spring-boot:run`)
+   - Health check: `GET http://localhost:8080/actuator/health`
+   - Tests: `./mvnw test`
+5. Frontend (Phase 2+): commands added when the Angular app is scaffolded
 
 ## Authentication
 
