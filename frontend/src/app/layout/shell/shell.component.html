@@ -1,0 +1,35 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav mode="side" opened class="shell__nav">
+    <div class="shell__brand">Prioritize</div>
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive="shell__link--active"
+        >
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary" class="shell__toolbar">
+      <span class="shell__title">Prioritize</span>
+      <span class="shell__spacer"></span>
+      @if (auth.isAuthenticated()) {
+        <span class="shell__user">{{ auth.currentUser()?.email }}</span>
+        <button mat-button type="button" (click)="logout()">Log out</button>
+      } @else {
+        <a mat-button routerLink="/auth/login">Log in</a>
+        <a mat-button routerLink="/auth/register">Register</a>
+      }
+    </mat-toolbar>
+
+    <main class="shell__content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -74,7 +74,12 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
    - From `backend/`: `./mvnw spring-boot:run` (Windows: `mvnw.cmd spring-boot:run`)
    - Health check: `GET http://localhost:8080/actuator/health`
    - Tests: `./mvnw test`
-5. Frontend (Phase 2+): commands added when the Angular app is scaffolded
+5. Frontend:
+   - Requires Node.js 20+ and npm
+   - From `frontend/`: `npm install` then `npm start` (serves at http://localhost:4200)
+   - API base URL: `http://localhost:8080` (see `src/environments/`)
+   - Production build: `npm run build`
+   - Auth pages are mock stubs until JWT wiring lands
 
 ## Authentication
 

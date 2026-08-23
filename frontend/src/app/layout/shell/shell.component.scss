@@ -1,0 +1,42 @@
+.shell {
+  height: 100vh;
+}
+
+.shell__nav {
+  width: 240px;
+  padding-top: 0.5rem;
+}
+
+.shell__brand {
+  font-size: 1.25rem;
+  font-weight: 500;
+  padding: 1rem 1.25rem;
+}
+
+.shell__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.shell__title {
+  font-weight: 500;
+}
+
+.shell__spacer {
+  flex: 1 1 auto;
+}
+
+.shell__user {
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.shell__content {
+  padding: 1.5rem;
+}
+
+.shell__link--active {
+  background: rgba(0, 0, 0, 0.04);
+}
