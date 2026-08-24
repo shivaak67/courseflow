@@ -51,7 +51,7 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
 ├── infra/            # AWS / deployment notes (later)
 ├── .github/          # CI/CD workflows (later)
 ├── .env.example      # Environment variable template
-└── docker-compose.yml  # Local stack (later phase)
+└── docker-compose.yml  # Local full stack (Postgres + API + SPA)
 ```
 
 ## Getting Started
@@ -123,11 +123,34 @@ REST under `/api/*`. Auth: `/api/auth/*` and Google OAuth endpoints. See [docs/a
 
 ## Docker
 
-Dockerfiles and `docker-compose.yml` for PostgreSQL, backend, and frontend will be added in a later phase.
+Run the full local stack (PostgreSQL, Spring Boot API, Angular SPA via nginx) with Docker Compose.
+
+1. Copy `.env.example` to `.env` and fill in secrets (`JWT_SECRET`, optional Google/Canvas values).
+2. From the repo root:
+
+```bash
+docker compose up --build
+```
+
+3. Open the app at [http://localhost:4200](http://localhost:4200). API: [http://localhost:8080](http://localhost:8080) (health: `/actuator/health`).
+
+**How ports map**
+
+| Service  | Host port | Notes |
+|----------|-----------|--------|
+| frontend | 4200 → 80 | nginx serves the SPA with client-side routing fallback |
+| backend  | 8080 → 8080 | Browser calls `http://localhost:8080` for API and OAuth (matches Angular `apiBaseUrl`) |
+| db       | 5432 → 5432 | Compose Postgres; backend uses hostname `db` inside the network |
+
+**Google OAuth:** keep the authorized redirect URI as `http://localhost:8080/login/oauth2/code/google` (same as non-Docker local). Success redirect stays `http://localhost:4200/auth/callback`.
+
+**Port 5432 conflict:** if you already run Postgres on the host (or another container named similarly), stop it or change the compose port mapping. Compose brings up its own `db` service and volume (`prioritize_pgdata`); it does not use a host-installed `prioritize-postgres` instance.
+
+Stop with `Ctrl+C` or `docker compose down`. Add `-v` to also remove the database volume.
 
 ## CI/CD
 
-GitHub Actions will build and test backend and frontend on pull requests. Deployment workflows for AWS come after the MVP.
+GitHub Actions builds and tests the backend (`./mvnw -B test`) and frontend (`npm ci` / `npm run build`) on pull requests and pushes to `main` and `develop`. Deployment workflows for AWS come after the MVP.
 
 ## Deployment (AWS)
 
