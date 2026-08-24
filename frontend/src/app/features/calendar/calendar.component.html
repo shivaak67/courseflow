@@ -4,38 +4,188 @@
       <p class="prio-kicker">Schedule</p>
       <h1 class="prio-title">Calendar</h1>
       <p class="prio-lede">
-        See deadlines by day, open an assignment, and mark it complete without leaving the week view.
+        See deadlines by day, pick an assignment, and log study time without leaving the month view.
       </p>
     </div>
   </header>
 
-  <div class="cal surface">
-    <div class="cal__head">
-      <h2>August 2026</h2>
-      <span>Preview layout</span>
-    </div>
-    <div class="cal__weekdays">
-      @for (day of days; track day) {
-        <span>{{ day }}</span>
-      }
-    </div>
-    <div class="cal__grid">
-      @for (n of cells; track n) {
-        <div class="cal__cell" [class.cal__cell--accent]="n === 22 || n === 25">
-          <span>{{ n }}</span>
-          @if (n === 22) {
-            <em>OS Project</em>
-          }
-          @if (n === 25) {
-            <em>DB HW</em>
+  @if (error(); as message) {
+    <p class="cal__banner cal__banner--error" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="cal__banner">Loading calendar…</p>
+  } @else {
+    <div class="cal__layout">
+      <div class="cal surface">
+        <div class="cal__head">
+          <div class="cal__nav">
+            <button mat-icon-button type="button" (click)="prevMonth()" aria-label="Previous month">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <h2>{{ monthLabel() }}</h2>
+            <button mat-icon-button type="button" (click)="nextMonth()" aria-label="Next month">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+          <span>
+            {{ dueThisMonthCount() === 0 ? 'No due dates' : dueThisMonthCount() + ' due this month' }}
+          </span>
+        </div>
+
+        <div class="cal__weekdays">
+          @for (day of weekdays; track day) {
+            <span>{{ day }}</span>
           }
         </div>
-      }
-    </div>
-  </div>
 
-  <p class="cal__note">
-    <mat-icon>filter_alt</mat-icon>
-    Course filters and live events arrive with the calendar feature branch.
-  </p>
+        <div class="cal__grid">
+          @for (cell of cells(); track cell.key) {
+            <div
+              class="cal__cell"
+              [class.cal__cell--muted]="!cell.inMonth"
+              [class.cal__cell--accent]="cell.assignments.length > 0"
+              [class.cal__cell--today]="cell.isToday"
+              [class.cal__cell--selected]="cell.inMonth && selectedDayKey() === cell.key"
+              [class.cal__cell--clickable]="cell.inMonth"
+              [attr.role]="cell.inMonth ? 'button' : null"
+              [attr.tabindex]="cell.inMonth ? 0 : null"
+              (click)="selectDay(cell)"
+              (keydown.enter)="selectDay(cell)"
+              (keydown.space)="$event.preventDefault(); selectDay(cell)"
+            >
+              @if (cell.day != null) {
+                <span class="cal__day">{{ cell.day }}</span>
+                @for (item of cell.assignments.slice(0, 2); track item.id) {
+                  <button
+                    type="button"
+                    class="cal__chip"
+                    (click)="selectAssignment(item, $event)"
+                    [attr.title]="item.courseName + ': ' + item.title"
+                  >
+                    {{ item.title }}
+                  </button>
+                }
+                @if (cell.assignments.length > 2) {
+                  <span class="cal__more">+{{ cell.assignments.length - 2 }} more</span>
+                }
+              }
+            </div>
+          }
+        </div>
+
+        @if (dueThisMonthCount() === 0) {
+          <div class="prio-empty cal__empty">
+            <div class="prio-empty__mark"><mat-icon>event_busy</mat-icon></div>
+            <h3>No due dates this month</h3>
+            <p>Assignments with due dates appear on their day once synced or added.</p>
+          </div>
+        }
+      </div>
+
+      <aside class="cal__side">
+        <article class="surface">
+          <div class="surface__head">
+            <h2>Log study time</h2>
+            <span>Against an assignment</span>
+          </div>
+
+          <form class="cal__form" (ngSubmit)="submitSession()">
+            <label class="cal__field">
+              <span>Assignment</span>
+              <select
+                [ngModel]="selectedAssignmentId()"
+                (ngModelChange)="selectedAssignmentId.set($event)"
+                name="assignmentId"
+                required
+              >
+                <option value="" disabled>Select an open assignment</option>
+                @for (item of openAssignments(); track item.id) {
+                  <option [value]="item.id">{{ item.courseName }} — {{ item.title }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="cal__field">
+              <span>Duration (minutes)</span>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                [ngModel]="durationMinutes()"
+                (ngModelChange)="durationMinutes.set(+$event)"
+                name="durationMinutes"
+                required
+              />
+            </label>
+
+            <label class="cal__field">
+              <span>Notes (optional)</span>
+              <textarea
+                rows="3"
+                [ngModel]="notes()"
+                (ngModelChange)="notes.set($event)"
+                name="notes"
+                placeholder="What did you focus on?"
+              ></textarea>
+            </label>
+
+            @if (formError(); as message) {
+              <p class="cal__form-msg cal__form-msg--error" role="alert">{{ message }}</p>
+            }
+            @if (formSuccess(); as message) {
+              <p class="cal__form-msg">{{ message }}</p>
+            }
+
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              class="cal__submit"
+              [disabled]="submitting() || openAssignments().length === 0"
+            >
+              <mat-icon>timer</mat-icon>
+              {{ submitting() ? 'Saving…' : 'Log session' }}
+            </button>
+
+            @if (openAssignments().length === 0) {
+              <p class="surface__note">No open assignments available to log against.</p>
+            }
+          </form>
+        </article>
+
+        <article class="surface">
+          <div class="surface__head">
+            <h2>Recent sessions</h2>
+            <span>Latest logs</span>
+          </div>
+
+          @if (recentSessions().length === 0) {
+            <div class="prio-empty">
+              <div class="prio-empty__mark"><mat-icon>history</mat-icon></div>
+              <h3>No study sessions yet</h3>
+              <p>Logged time will show up here after you submit a session.</p>
+            </div>
+          } @else {
+            <ul class="session-list">
+              @for (session of recentSessions(); track session.id) {
+                <li>
+                  <div>
+                    <strong>{{ session.assignmentTitle }}</strong>
+                    <p>
+                      {{ session.courseName }} · {{ session.durationMinutes }} min ·
+                      {{ sessionWhen(session) }}
+                    </p>
+                    @if (session.notes) {
+                      <p class="session-list__notes">{{ session.notes }}</p>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+      </aside>
+    </div>
+  }
 </section>

@@ -43,3 +43,44 @@ export interface CourseDto {
   courseCode: string | null;
   term: string | null;
 }
+
+export interface AssignmentDto {
+  id: string;
+  courseId: string;
+  courseName: string;
+  canvasAssignmentId: string | null;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  pointsPossible: number | null;
+  completed: boolean;
+  submitted: boolean;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | null;
+  estimatedHours: number | null;
+  actualHours: number;
+  personalPriority: number | null;
+  priorityScore: number | null;
+  priorityLevel: PriorityLevel | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudySessionDto {
+  id: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  courseName: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationMinutes: number;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface CreateStudySessionRequest {
+  assignmentId: string;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationMinutes: number;
+  notes?: string | null;
+}
