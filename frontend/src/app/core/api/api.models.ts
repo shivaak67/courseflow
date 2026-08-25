@@ -214,3 +214,62 @@ export interface UpdateTaskRequest {
   priority?: TaskPriority;
   status?: TaskStatus;
 }
+
+/** Manual schedule blocks (time-blocking) */
+
+export interface ScheduleBlockDto {
+  id: string;
+  taskId: string;
+  taskTitle?: string | null;
+  startAt: string;
+  endAt: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateScheduleBlockRequest {
+  taskId: string;
+  startAt: string;
+  endAt: string;
+  completed?: boolean;
+}
+
+export interface UpdateScheduleBlockRequest {
+  taskId: string;
+  startAt: string;
+  endAt: string;
+  completed?: boolean;
+}
+
+/** Personal calendar events */
+
+export interface CalendarEventDto {
+  id: string;
+  title: string;
+  description: string | null;
+  categoryId: string | null;
+  startAt: string;
+  endAt: string;
+  allDay: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCalendarEventRequest {
+  title: string;
+  description?: string | null;
+  categoryId?: string | null;
+  startAt: string;
+  endAt: string;
+  allDay?: boolean;
+}
+
+export interface UpdateCalendarEventRequest {
+  title?: string;
+  description?: string | null;
+  categoryId?: string | null;
+  startAt?: string;
+  endAt?: string;
+  allDay?: boolean;
+}

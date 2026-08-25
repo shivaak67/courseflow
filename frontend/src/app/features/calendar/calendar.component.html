@@ -1,10 +1,10 @@
 <section class="page prio-page">
   <header class="page__header">
     <div>
-      <p class="prio-kicker">Schedule</p>
+      <p class="prio-kicker">Planning</p>
       <h1 class="prio-title">Calendar</h1>
       <p class="prio-lede">
-        See deadlines by day, pick an assignment, and log study time without leaving the month view.
+        See task due dates and personal events by day — add events or inspect what falls on a date.
       </p>
     </div>
   </header>
@@ -29,7 +29,7 @@
             </button>
           </div>
           <span>
-            {{ dueThisMonthCount() === 0 ? 'No due dates' : dueThisMonthCount() + ' due this month' }}
+            {{ monthItemCount() === 0 ? 'Nothing this month' : monthItemCount() + ' items this month' }}
           </span>
         </div>
 
@@ -44,7 +44,7 @@
             <div
               class="cal__cell"
               [class.cal__cell--muted]="!cell.inMonth"
-              [class.cal__cell--accent]="cell.assignments.length > 0"
+              [class.cal__cell--accent]="cell.chips.length > 0"
               [class.cal__cell--today]="cell.isToday"
               [class.cal__cell--selected]="cell.inMonth && selectedDayKey() === cell.key"
               [class.cal__cell--clickable]="cell.inMonth"
@@ -56,29 +56,28 @@
             >
               @if (cell.day != null) {
                 <span class="cal__day">{{ cell.day }}</span>
-                @for (item of cell.assignments.slice(0, 2); track item.id) {
-                  <button
-                    type="button"
+                @for (chip of cell.chips.slice(0, 2); track chip.id) {
+                  <span
                     class="cal__chip"
-                    (click)="selectAssignment(item, $event)"
-                    [attr.title]="item.courseName + ': ' + item.title"
+                    [class.cal__chip--event]="chip.kind === 'event'"
+                    [attr.title]="chip.label"
                   >
-                    {{ item.title }}
-                  </button>
+                    {{ chip.label }}
+                  </span>
                 }
-                @if (cell.assignments.length > 2) {
-                  <span class="cal__more">+{{ cell.assignments.length - 2 }} more</span>
+                @if (cell.chips.length > 2) {
+                  <span class="cal__more">+{{ cell.chips.length - 2 }} more</span>
                 }
               }
             </div>
           }
         </div>
 
-        @if (dueThisMonthCount() === 0) {
+        @if (monthItemCount() === 0) {
           <div class="prio-empty cal__empty">
             <div class="prio-empty__mark"><mat-icon>event_busy</mat-icon></div>
-            <h3>No due dates this month</h3>
-            <p>Assignments with due dates appear on their day once synced or added.</p>
+            <h3>No items this month</h3>
+            <p>Task due dates and calendar events will show on their days.</p>
           </div>
         }
       </div>
@@ -86,48 +85,24 @@
       <aside class="cal__side">
         <article class="surface">
           <div class="surface__head">
-            <h2>Log study time</h2>
-            <span>Against an assignment</span>
+            <h2>New event</h2>
+            <span>Personal calendar</span>
           </div>
 
-          <form class="cal__form" (ngSubmit)="submitSession()">
+          <form class="cal__form" [formGroup]="eventForm" (ngSubmit)="submitEvent()">
             <label class="cal__field">
-              <span>Assignment</span>
-              <select
-                [ngModel]="selectedAssignmentId()"
-                (ngModelChange)="selectedAssignmentId.set($event)"
-                name="assignmentId"
-                required
-              >
-                <option value="" disabled>Select an open assignment</option>
-                @for (item of openAssignments(); track item.id) {
-                  <option [value]="item.id">{{ item.courseName }} — {{ item.title }}</option>
-                }
-              </select>
+              <span>Title</span>
+              <input type="text" formControlName="title" placeholder="e.g. Dentist, team sync" />
             </label>
 
             <label class="cal__field">
-              <span>Duration (minutes)</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                [ngModel]="durationMinutes()"
-                (ngModelChange)="durationMinutes.set(+$event)"
-                name="durationMinutes"
-                required
-              />
+              <span>Start</span>
+              <input type="datetime-local" formControlName="startLocal" />
             </label>
 
             <label class="cal__field">
-              <span>Notes (optional)</span>
-              <textarea
-                rows="3"
-                [ngModel]="notes()"
-                (ngModelChange)="notes.set($event)"
-                name="notes"
-                placeholder="What did you focus on?"
-              ></textarea>
+              <span>End</span>
+              <input type="datetime-local" formControlName="endLocal" />
             </label>
 
             @if (formError(); as message) {
@@ -142,43 +117,72 @@
               color="primary"
               type="submit"
               class="cal__submit"
-              [disabled]="submitting() || openAssignments().length === 0"
+              [disabled]="submitting()"
             >
-              <mat-icon>timer</mat-icon>
-              {{ submitting() ? 'Saving…' : 'Log session' }}
+              <mat-icon>event</mat-icon>
+              {{ submitting() ? 'Saving…' : 'Add event' }}
             </button>
-
-            @if (openAssignments().length === 0) {
-              <p class="surface__note">No open assignments available to log against.</p>
-            }
           </form>
         </article>
 
         <article class="surface">
           <div class="surface__head">
-            <h2>Recent sessions</h2>
-            <span>Latest logs</span>
+            <h2>{{ selectedDayLabel() }}</h2>
+            <span>Due · events · blocks</span>
           </div>
 
-          @if (recentSessions().length === 0) {
+          @if (!selectedDayKey()) {
             <div class="prio-empty">
-              <div class="prio-empty__mark"><mat-icon>history</mat-icon></div>
-              <h3>No study sessions yet</h3>
-              <p>Logged time will show up here after you submit a session.</p>
+              <div class="prio-empty__mark"><mat-icon>touch_app</mat-icon></div>
+              <h3>Select a day</h3>
+              <p>Click a day in the grid to see what’s planned.</p>
+            </div>
+          } @else if (!dayHasItems()) {
+            <div class="prio-empty">
+              <div class="prio-empty__mark"><mat-icon>wb_sunny</mat-icon></div>
+              <h3>Clear day</h3>
+              <p>No tasks due, events, or schedule blocks on this date.</p>
             </div>
           } @else {
-            <ul class="session-list">
-              @for (session of recentSessions(); track session.id) {
+            <ul class="day-list">
+              @for (task of dayTasks(); track task.id) {
                 <li>
                   <div>
-                    <strong>{{ session.assignmentTitle }}</strong>
+                    <span class="day-list__tag">Task due</span>
+                    <strong>{{ task.title }}</strong>
+                    <p>{{ task.priority }} · {{ task.status }}</p>
+                  </div>
+                </li>
+              }
+              @for (event of dayEvents(); track event.id) {
+                <li>
+                  <div>
+                    <span class="day-list__tag day-list__tag--event">Event</span>
+                    <strong>{{ event.title }}</strong>
                     <p>
-                      {{ session.courseName }} · {{ session.durationMinutes }} min ·
-                      {{ sessionWhen(session) }}
+                      @if (event.allDay) {
+                        All day
+                      } @else {
+                        {{ formatTimeRange(event.startAt, event.endAt) }}
+                      }
                     </p>
-                    @if (session.notes) {
-                      <p class="session-list__notes">{{ session.notes }}</p>
-                    }
+                  </div>
+                  <button mat-icon-button type="button" (click)="deleteEvent(event)" aria-label="Delete event">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </li>
+              }
+              @for (block of dayBlocks(); track block.id) {
+                <li>
+                  <div>
+                    <span class="day-list__tag day-list__tag--block">Block</span>
+                    <strong>{{ blockTitle(block) }}</strong>
+                    <p>
+                      {{ formatTimeRange(block.startAt, block.endAt) }}
+                      @if (block.completed) {
+                        · done
+                      }
+                    </p>
                   </div>
                 </li>
               }

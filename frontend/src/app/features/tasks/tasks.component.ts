@@ -64,8 +64,15 @@ export class TasksComponent implements OnInit {
         this.form.reset({ title: '', priority: 'MEDIUM', status: 'TODO' });
         this.saving.set(false);
       },
-      error: () => {
-        this.error.set('Could not create task.');
+      error: (err) => {
+        const status = err?.status as number | undefined;
+        this.error.set(
+          status === 404
+            ? 'Tasks API not available — restart the backend with the latest code.'
+            : status === 0
+              ? 'Cannot reach the API. Is the backend running on port 8080?'
+              : 'Could not create task.',
+        );
         this.saving.set(false);
       },
     });
@@ -75,14 +82,26 @@ export class TasksComponent implements OnInit {
     if (task.status === 'COMPLETED') {
       return;
     }
-    this.api.updateTask(task.id, { status: 'COMPLETED' }).subscribe({
-      next: (updated) => {
-        this.tasks.update((list) =>
-          list.map((item) => (item.id === updated.id ? updated : item)),
-        );
-      },
-      error: () => this.error.set('Could not update task.'),
-    });
+    this.api
+      .updateTask(task.id, {
+        title: task.title,
+        description: task.description,
+        categoryId: task.categoryId,
+        projectId: task.projectId,
+        dueDate: task.dueDate,
+        dueTime: task.dueTime,
+        estimatedMinutes: task.estimatedMinutes,
+        priority: task.priority,
+        status: 'COMPLETED',
+      })
+      .subscribe({
+        next: (updated) => {
+          this.tasks.update((list) =>
+            list.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        },
+        error: () => this.error.set('Could not update task.'),
+      });
   }
 
   isOpen(task: TaskDto): boolean {

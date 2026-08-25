@@ -43,6 +43,14 @@ export const routes: Routes = [
           import('./features/tasks/tasks.component').then((m) => m.TasksComponent),
       },
       {
+        path: 'schedule',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/schedule/schedule.component').then(
+            (m) => m.ScheduleComponent,
+          ),
+      },
+      {
         path: 'goals',
         canActivate: [authGuard],
         loadComponent: () =>

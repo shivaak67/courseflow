@@ -4,23 +4,29 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AssignmentDto,
+  CalendarEventDto,
   CanvasSyncResult,
   CategoryDto,
   CourseDto,
+  CreateCalendarEventRequest,
   CreateCategoryRequest,
   CreateGoalRequest,
   CreateProjectRequest,
+  CreateScheduleBlockRequest,
   CreateStudySessionRequest,
   CreateTaskRequest,
   DashboardSummary,
   GoalDto,
   PrioritizedAssignment,
   ProjectDto,
+  ScheduleBlockDto,
   StudySessionDto,
   TaskDto,
+  UpdateCalendarEventRequest,
   UpdateCategoryRequest,
   UpdateGoalRequest,
   UpdateProjectRequest,
+  UpdateScheduleBlockRequest,
   UpdateTaskRequest,
 } from './api.models';
 
@@ -127,5 +133,45 @@ export class ApiService {
 
   deleteTask(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/api/tasks/${id}`);
+  }
+
+  // --- Schedule blocks ---
+
+  listScheduleBlocks(from: string, to: string): Observable<ScheduleBlockDto[]> {
+    return this.http.get<ScheduleBlockDto[]>(`${this.base}/api/schedule-blocks`, {
+      params: { from, to },
+    });
+  }
+
+  createScheduleBlock(body: CreateScheduleBlockRequest): Observable<ScheduleBlockDto> {
+    return this.http.post<ScheduleBlockDto>(`${this.base}/api/schedule-blocks`, body);
+  }
+
+  updateScheduleBlock(id: string, body: UpdateScheduleBlockRequest): Observable<ScheduleBlockDto> {
+    return this.http.put<ScheduleBlockDto>(`${this.base}/api/schedule-blocks/${id}`, body);
+  }
+
+  deleteScheduleBlock(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/schedule-blocks/${id}`);
+  }
+
+  // --- Calendar events ---
+
+  listCalendarEvents(from: string, to: string): Observable<CalendarEventDto[]> {
+    return this.http.get<CalendarEventDto[]>(`${this.base}/api/calendar-events`, {
+      params: { from, to },
+    });
+  }
+
+  createCalendarEvent(body: CreateCalendarEventRequest): Observable<CalendarEventDto> {
+    return this.http.post<CalendarEventDto>(`${this.base}/api/calendar-events`, body);
+  }
+
+  updateCalendarEvent(id: string, body: UpdateCalendarEventRequest): Observable<CalendarEventDto> {
+    return this.http.put<CalendarEventDto>(`${this.base}/api/calendar-events/${id}`, body);
+  }
+
+  deleteCalendarEvent(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/calendar-events/${id}`);
   }
 }

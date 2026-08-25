@@ -1,0 +1,95 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Time blocking</p>
+      <h1 class="prio-title">Schedule</h1>
+      <p class="prio-lede">
+        Block time against open tasks for the week — start, finish, mark done, or remove.
+      </p>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <form class="crud__form prio-panel" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="crud__field">
+      <span>Task</span>
+      <select formControlName="taskId">
+        <option value="" disabled>Select an open task</option>
+        @for (task of openTasks(); track task.id) {
+          <option [value]="task.id">{{ task.title }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field">
+      <span>Start</span>
+      <input type="datetime-local" formControlName="startLocal" />
+    </label>
+    <label class="crud__field">
+      <span>End</span>
+      <input type="datetime-local" formControlName="endLocal" />
+    </label>
+    <button
+      mat-flat-button
+      color="primary"
+      type="submit"
+      [disabled]="saving() || openTasks().length === 0"
+    >
+      <mat-icon>add</mat-icon>
+      {{ saving() ? 'Adding…' : 'Add block' }}
+    </button>
+  </form>
+
+  <div class="sched__week">
+    <div class="sched__week-nav">
+      <button mat-icon-button type="button" (click)="prevWeek()" aria-label="Previous week">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <h2>{{ weekLabel() }}</h2>
+      <button mat-icon-button type="button" (click)="nextWeek()" aria-label="Next week">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+    <span class="sched__week-hint">This week’s blocks</span>
+  </div>
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading schedule…</p>
+  } @else if (blocks().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>view_agenda</mat-icon></div>
+      <h3>No blocks this week</h3>
+      <p>Pick a task and a time range above to schedule focused work.</p>
+    </div>
+  } @else {
+    <ul class="crud__list">
+      @for (block of blocks(); track block.id) {
+        <li class="crud__item" [class.crud__item--done]="block.completed">
+          <div>
+            <strong>{{ blockTitle(block) }}</strong>
+            <p>
+              {{ formatRange(block) }}
+              @if (block.completed) {
+                · <span class="crud__done">Done</span>
+              }
+            </p>
+          </div>
+          <div class="crud__actions">
+            @if (!block.completed) {
+              <button mat-stroked-button type="button" (click)="markComplete(block)">
+                <mat-icon>check</mat-icon>
+                Complete
+              </button>
+            }
+            <button mat-stroked-button type="button" (click)="remove(block)">
+              <mat-icon>delete</mat-icon>
+              Delete
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>
