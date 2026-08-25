@@ -4,23 +4,13 @@
       <p class="prio-kicker">Overview</p>
       <h1 class="prio-title">Dashboard</h1>
       <p class="prio-lede">
-        A calm snapshot of urgency, course load, and what needs attention before the weekend.
+        A calm snapshot of what is due, overdue, and ready for attention this week.
       </p>
     </div>
     <div class="page__actions">
-      <button
-        mat-stroked-button
-        type="button"
-        class="page__sync"
-        (click)="syncCanvas()"
-        [disabled]="syncing()"
-      >
-        <mat-icon>sync</mat-icon>
-        {{ syncing() ? 'Syncing…' : 'Sync Canvas' }}
-      </button>
-      <a mat-flat-button color="primary" routerLink="/work-queue" class="page__cta">
-        <mat-icon>bolt</mat-icon>
-        Open work queue
+      <a mat-flat-button color="primary" routerLink="/tasks" class="page__cta">
+        <mat-icon>checklist</mat-icon>
+        Open tasks
       </a>
     </div>
   </header>
@@ -28,12 +18,9 @@
   @if (error(); as message) {
     <p class="dash__banner dash__banner--error" role="alert">{{ message }}</p>
   }
-  @if (syncMessage(); as message) {
-    <p class="dash__banner">{{ message }}</p>
-  }
 
   <div class="dash__metrics">
-    @for (item of highlights(); track item.label) {
+    @for (item of metrics(); track item.label) {
       <article class="metric">
         <p class="metric__label">{{ item.label }}</p>
         <p class="metric__value">{{ item.value }}</p>
@@ -42,54 +29,34 @@
     }
   </div>
 
-  <div class="dash__split">
-    <article class="surface">
-      <div class="surface__head">
-        <h2>Upcoming focus</h2>
-        <span>Top priority</span>
+  <article class="surface">
+    <div class="surface__head">
+      <h2>Upcoming focus</h2>
+      <span>Open tasks</span>
+    </div>
+
+    @if (loading()) {
+      <p class="surface__note">Loading tasks…</p>
+    } @else if (focusItems().length === 0) {
+      <div class="prio-empty">
+        <div class="prio-empty__mark"><mat-icon>event_upcoming</mat-icon></div>
+        <h3>No open tasks yet</h3>
+        <p>Add tasks from the Tasks page to see what needs attention here.</p>
       </div>
-
-      @if (focusItems().length === 0) {
-        <div class="prio-empty">
-          <div class="prio-empty__mark"><mat-icon>event_upcoming</mat-icon></div>
-          <h3>No assignments yet</h3>
-          <p>Sync Canvas or add a course manually to populate your week.</p>
-        </div>
-      } @else {
-        <ul class="focus-list">
-          @for (item of focusItems(); track item.id) {
-            <li>
-              <div>
-                <strong>{{ item.title }}</strong>
-                <p>{{ item.courseName }} · {{ dueLabel(item.dueDate) }}</p>
-              </div>
-              <span class="queue__level" [attr.data-level]="item.priorityLevel ?? 'MEDIUM'">
-                {{ item.priorityLevel ?? '—' }}
-              </span>
-            </li>
-          }
-        </ul>
-      }
-    </article>
-
-    <article class="surface">
-      <div class="surface__head">
-        <h2>Course pressure</h2>
-        <span>Open effort</span>
-      </div>
-
-      @if ((summary()?.workloadByCourse?.length ?? 0) === 0) {
-        <p class="surface__note">Workload by course appears after you sync or add assignments.</p>
-      } @else {
-        <div class="bars">
-          @for (item of summary()!.workloadByCourse; track item.courseId) {
-            <div class="bars__row">
-              <span>{{ item.courseName }}</span>
-              <i [style.--w]="barWidth(item, maxWorkloadHours())"></i>
+    } @else {
+      <ul class="focus-list">
+        @for (item of focusItems(); track item.id) {
+          <li>
+            <div>
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.status }} · {{ dueLabel(item.dueDate) }}</p>
             </div>
-          }
-        </div>
-      }
-    </article>
-  </div>
+            <span class="queue__level" [attr.data-level]="item.priority">
+              {{ item.priority }}
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </article>
 </section>

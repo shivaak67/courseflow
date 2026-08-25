@@ -1,0 +1,117 @@
+.page__header {
+  margin-bottom: 1.4rem;
+}
+
+.crud__banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #d9a3a3;
+  background: #fff5f5;
+  color: #8a2f2f;
+  font-size: 0.92rem;
+}
+
+.crud__form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.1rem;
+}
+
+.crud__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.crud__field span {
+  color: var(--prio-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.crud__field input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--prio-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--prio-ink);
+}
+
+.crud__form button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.crud__note {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 1rem 0 0;
+  color: var(--prio-ink-soft);
+  font-size: 0.88rem;
+}
+
+.crud__note mat-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--prio-teal);
+}
+
+.crud__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.crud__item {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--prio-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  transition: transform 0.25s var(--prio-ease), box-shadow 0.25s var(--prio-ease);
+}
+
+.crud__item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--prio-shadow);
+}
+
+.crud__item strong {
+  display: block;
+  font-family: var(--prio-font-display);
+  font-size: 1.15rem;
+}
+
+.crud__item p {
+  margin: 0.3rem 0 0;
+  color: var(--prio-ink-soft);
+  font-size: 0.86rem;
+}
+
+.prio-empty h3 {
+  margin: 0;
+  font-family: var(--prio-font-display);
+  font-size: 1.2rem;
+}
+
+.prio-empty p {
+  margin: 0;
+  color: var(--prio-ink-soft);
+}
+
+@media (max-width: 560px) {
+  .crud__form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -84,3 +84,133 @@ export interface CreateStudySessionRequest {
   durationMinutes: number;
   notes?: string | null;
 }
+
+/** Planning-core entities (Category / Goal / Project / Task) */
+
+export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ARCHIVED';
+export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ARCHIVED';
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export interface CategoryDto {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  icon?: string | null;
+  color?: string | null;
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  icon?: string | null;
+  color?: string | null;
+}
+
+export interface GoalDto {
+  id: string;
+  categoryId: string | null;
+  title: string;
+  description: string | null;
+  targetDate: string | null;
+  status: GoalStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGoalRequest {
+  title: string;
+  categoryId?: string | null;
+  description?: string | null;
+  targetDate?: string | null;
+  status?: GoalStatus;
+}
+
+export interface UpdateGoalRequest {
+  title?: string;
+  categoryId?: string | null;
+  description?: string | null;
+  targetDate?: string | null;
+  status?: GoalStatus;
+}
+
+export interface ProjectDto {
+  id: string;
+  categoryId: string | null;
+  goalId: string | null;
+  title: string;
+  description: string | null;
+  startDate: string | null;
+  targetDate: string | null;
+  status: ProjectStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectRequest {
+  title: string;
+  categoryId?: string | null;
+  goalId?: string | null;
+  description?: string | null;
+  startDate?: string | null;
+  targetDate?: string | null;
+  status?: ProjectStatus;
+}
+
+export interface UpdateProjectRequest {
+  title?: string;
+  categoryId?: string | null;
+  goalId?: string | null;
+  description?: string | null;
+  startDate?: string | null;
+  targetDate?: string | null;
+  status?: ProjectStatus;
+}
+
+export interface TaskDto {
+  id: string;
+  categoryId: string | null;
+  projectId: string | null;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  dueTime: string | null;
+  estimatedMinutes: number | null;
+  actualMinutes: number;
+  priority: TaskPriority;
+  status: TaskStatus;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  categoryId?: string | null;
+  projectId?: string | null;
+  description?: string | null;
+  dueDate?: string | null;
+  dueTime?: string | null;
+  estimatedMinutes?: number | null;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+}
+
+export interface UpdateTaskRequest {
+  title?: string;
+  categoryId?: string | null;
+  projectId?: string | null;
+  description?: string | null;
+  dueDate?: string | null;
+  dueTime?: string | null;
+  estimatedMinutes?: number | null;
+  actualMinutes?: number;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+}

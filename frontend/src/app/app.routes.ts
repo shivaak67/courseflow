@@ -37,11 +37,23 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'work-queue',
+        path: 'tasks',
         canActivate: [authGuard],
         loadComponent: () =>
-          import('./features/work-queue/work-queue.component').then(
-            (m) => m.WorkQueueComponent,
+          import('./features/tasks/tasks.component').then((m) => m.TasksComponent),
+      },
+      {
+        path: 'goals',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/goals/goals.component').then((m) => m.GoalsComponent),
+      },
+      {
+        path: 'projects',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/projects/projects.component').then(
+            (m) => m.ProjectsComponent,
           ),
       },
       {
@@ -53,13 +65,15 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'courses',
+        path: 'settings',
         canActivate: [authGuard],
         loadComponent: () =>
-          import('./features/courses/courses.component').then(
-            (m) => m.CoursesComponent,
+          import('./features/settings/settings.component').then(
+            (m) => m.SettingsComponent,
           ),
       },
+      { path: 'work-queue', redirectTo: 'tasks', pathMatch: 'full' },
+      { path: 'courses', redirectTo: 'tasks', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

@@ -3,7 +3,13 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../core/api/api.service';
-import { DashboardSummary, PrioritizedAssignment, WorkloadByCourse } from '../../core/api/api.models';
+import { TaskDto, TaskPriority } from '../../core/api/api.models';
+
+interface DashMetric {
+  label: string;
+  value: string;
+  hint: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -16,11 +22,14 @@ export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
 
   readonly loading = signal(true);
-  readonly syncing = signal(false);
   readonly error = signal<string | null>(null);
-  readonly syncMessage = signal<string | null>(null);
-  readonly summary = signal<DashboardSummary | null>(null);
-  readonly focusItems = signal<PrioritizedAssignment[]>([]);
+  readonly tasks = signal<TaskDto[]>([]);
+  readonly metrics = signal<DashMetric[]>([
+    { label: 'Due today', value: '—', hint: 'Loading…' },
+    { label: 'This week', value: '—', hint: 'Loading…' },
+    { label: 'Overdue', value: '—', hint: 'Loading…' },
+    { label: 'Open', value: '—', hint: 'Loading…' },
+  ]);
 
   ngOnInit(): void {
     this.reload();
@@ -29,83 +38,50 @@ export class DashboardComponent implements OnInit {
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.dashboardSummary().subscribe({
-      next: (summary) => {
-        this.summary.set(summary);
+    this.api.listTasks().subscribe({
+      next: (tasks) => {
+        this.tasks.set(tasks);
+        this.metrics.set(this.computeMetrics(tasks));
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Could not load dashboard summary.');
+        this.error.set('Could not load tasks for dashboard metrics.');
+        this.metrics.set([
+          { label: 'Due today', value: '0', hint: 'Deadlines landing today' },
+          { label: 'This week', value: '0', hint: 'Open work in the next 7 days' },
+          { label: 'Overdue', value: '0', hint: 'Past due and still open' },
+          { label: 'Open', value: '0', hint: 'Todo or in progress' },
+        ]);
         this.loading.set(false);
       },
     });
-
-    this.api.prioritizedAssignments().subscribe({
-      next: (items) => this.focusItems.set(items.slice(0, 4)),
-      error: () => this.focusItems.set([]),
-    });
   }
 
-  syncCanvas(): void {
-    this.syncing.set(true);
-    this.syncMessage.set(null);
-    this.api.syncCanvas().subscribe({
-      next: (result) => {
-        this.syncing.set(false);
-        this.syncMessage.set(
-          `Synced ${result.coursesUpserted} courses and ${result.assignmentsUpserted} assignments.`,
-        );
-        this.reload();
-      },
-      error: () => {
-        this.syncing.set(false);
-        this.syncMessage.set('Canvas sync failed. Check CANVAS settings or enable mock mode.');
-      },
-    });
-  }
-
-  highlights() {
-    const s = this.summary();
-    if (!s) {
-      return [
-        { label: 'Due today', value: '—', hint: 'Loading…' },
-        { label: 'This week', value: '—', hint: 'Loading…' },
-        { label: 'Overdue', value: '—', hint: 'Loading…' },
-        { label: 'Hours left', value: '—', hint: 'Loading…' },
-      ];
-    }
-    return [
-      { label: 'Due today', value: String(s.dueTodayCount), hint: 'Deadlines landing today' },
-      { label: 'This week', value: String(s.dueThisWeekCount), hint: 'Open work in the next 7 days' },
-      { label: 'Overdue', value: String(s.overdueCount), hint: 'Past due and still open' },
-      {
-        label: 'Hours left',
-        value: String(s.estimatedHoursRemainingThisWeek),
-        hint: 'Estimated effort due this week',
-      },
-    ];
-  }
-
-  barWidth(item: WorkloadByCourse, maxHours: number): string {
-    if (maxHours <= 0) {
-      return '8%';
-    }
-    const pct = Math.max(8, Math.round((item.estimatedHours / maxHours) * 100));
-    return `${pct}%`;
-  }
-
-  maxWorkloadHours(): number {
-    const items = this.summary()?.workloadByCourse ?? [];
-    return items.reduce((max, item) => Math.max(max, item.estimatedHours), 0);
+  focusItems(): TaskDto[] {
+    const priorityRank: Record<TaskPriority, number> = {
+      URGENT: 0,
+      HIGH: 1,
+      MEDIUM: 2,
+      LOW: 3,
+    };
+    return this.tasks()
+      .filter((t) => t.status === 'TODO' || t.status === 'IN_PROGRESS')
+      .sort((a, b) => {
+        const p = priorityRank[a.priority] - priorityRank[b.priority];
+        if (p !== 0) {
+          return p;
+        }
+        return (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999');
+      })
+      .slice(0, 4);
   }
 
   dueLabel(dueDate: string | null): string {
     if (!dueDate) {
       return 'No due date';
     }
-    const due = new Date(dueDate);
-    const now = Date.now();
-    const days = Math.ceil((due.getTime() - now) / (1000 * 60 * 60 * 24));
+    const due = new Date(`${dueDate}T12:00:00`);
+    const days = Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (days < 0) {
       return `Overdue by ${Math.abs(days)}d`;
     }
@@ -116,5 +92,49 @@ export class DashboardComponent implements OnInit {
       return 'Due tomorrow';
     }
     return `Due in ${days} days`;
+  }
+
+  private computeMetrics(tasks: TaskDto[]): DashMetric[] {
+    const today = this.toDateKey(new Date());
+    const weekEnd = new Date();
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const weekEndKey = this.toDateKey(weekEnd);
+
+    let dueToday = 0;
+    let dueThisWeek = 0;
+    let overdue = 0;
+    let open = 0;
+
+    for (const task of tasks) {
+      const isOpen = task.status === 'TODO' || task.status === 'IN_PROGRESS';
+      if (isOpen) {
+        open += 1;
+      }
+      if (!task.dueDate || !isOpen) {
+        continue;
+      }
+      if (task.dueDate === today) {
+        dueToday += 1;
+      }
+      if (task.dueDate < today) {
+        overdue += 1;
+      } else if (task.dueDate <= weekEndKey) {
+        dueThisWeek += 1;
+      }
+    }
+
+    return [
+      { label: 'Due today', value: String(dueToday), hint: 'Deadlines landing today' },
+      { label: 'This week', value: String(dueThisWeek), hint: 'Open work in the next 7 days' },
+      { label: 'Overdue', value: String(overdue), hint: 'Past due and still open' },
+      { label: 'Open', value: String(open), hint: 'Todo or in progress' },
+    ];
+  }
+
+  private toDateKey(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 }

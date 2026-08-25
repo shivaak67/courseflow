@@ -1,0 +1,47 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Containers</p>
+      <h1 class="prio-title">Projects</h1>
+      <p class="prio-lede">
+        Group related work under a project — link goals and categories as the model grows.
+      </p>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <form class="crud__form prio-panel" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="crud__field">
+      <span>Title</span>
+      <input type="text" formControlName="title" placeholder="e.g. Website redesign" />
+    </label>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+      <mat-icon>add</mat-icon>
+      {{ saving() ? 'Adding…' : 'Add project' }}
+    </button>
+  </form>
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading projects…</p>
+  } @else if (projects().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>folder_open</mat-icon></div>
+      <h3>No projects yet</h3>
+      <p>Add a title above to create your first project.</p>
+    </div>
+  } @else {
+    <ul class="crud__list">
+      @for (project of projects(); track project.id) {
+        <li class="crud__item">
+          <div>
+            <strong>{{ project.title }}</strong>
+            <p>{{ project.status }}@if (project.targetDate) { · target {{ project.targetDate }} }</p>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

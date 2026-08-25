@@ -1,0 +1,47 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Outcomes</p>
+      <h1 class="prio-title">Goals</h1>
+      <p class="prio-lede">
+        Name the outcomes you are aiming for — projects and tasks can hang off these later.
+      </p>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <form class="crud__form prio-panel" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="crud__field">
+      <span>Title</span>
+      <input type="text" formControlName="title" placeholder="e.g. Ship planning MVP" />
+    </label>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+      <mat-icon>add</mat-icon>
+      {{ saving() ? 'Adding…' : 'Add goal' }}
+    </button>
+  </form>
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading goals…</p>
+  } @else if (goals().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>flag</mat-icon></div>
+      <h3>No goals yet</h3>
+      <p>Add a title above to define your first outcome.</p>
+    </div>
+  } @else {
+    <ul class="crud__list">
+      @for (goal of goals(); track goal.id) {
+        <li class="crud__item">
+          <div>
+            <strong>{{ goal.title }}</strong>
+            <p>{{ goal.status }}@if (goal.targetDate) { · target {{ goal.targetDate }} }</p>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

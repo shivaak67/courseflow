@@ -25,9 +25,11 @@ export class ShellComponent {
 
   readonly navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-    { label: 'Work Queue', path: '/work-queue', icon: 'playlist_add_check' },
+    { label: 'Tasks', path: '/tasks', icon: 'checklist' },
+    { label: 'Goals', path: '/goals', icon: 'flag' },
+    { label: 'Projects', path: '/projects', icon: 'folder_open' },
     { label: 'Calendar', path: '/calendar', icon: 'calendar_month' },
-    { label: 'Courses', path: '/courses', icon: 'school' },
+    { label: 'Settings', path: '/settings', icon: 'settings' },
   ];
 
   logout(): void {

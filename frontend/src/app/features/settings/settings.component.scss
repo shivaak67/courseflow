@@ -1,0 +1,20 @@
+.page__header {
+  margin-bottom: 1.4rem;
+}
+
+.prio-empty {
+  margin-top: 0.25rem;
+}
+
+.prio-empty h3 {
+  margin: 0;
+  font-family: var(--prio-font-display);
+  font-size: 1.25rem;
+}
+
+.prio-empty p {
+  margin: 0;
+  color: var(--prio-ink-soft);
+  max-width: 32rem;
+  line-height: 1.5;
+}

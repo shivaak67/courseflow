@@ -1,0 +1,77 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Work</p>
+      <h1 class="prio-title">Tasks</h1>
+      <p class="prio-lede">
+        Capture what needs doing, set priority and status, and mark items complete as you go.
+      </p>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <form class="crud__form prio-panel" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="crud__field">
+      <span>Title</span>
+      <input type="text" formControlName="title" placeholder="e.g. Draft project brief" />
+    </label>
+    <label class="crud__field">
+      <span>Priority</span>
+      <select formControlName="priority">
+        @for (level of priorities; track level) {
+          <option [value]="level">{{ level }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field">
+      <span>Status</span>
+      <select formControlName="status">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </label>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+      <mat-icon>add</mat-icon>
+      {{ saving() ? 'Adding…' : 'Add task' }}
+    </button>
+  </form>
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading tasks…</p>
+  } @else if (tasks().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>checklist</mat-icon></div>
+      <h3>No tasks yet</h3>
+      <p>Add a title above to start building your list.</p>
+    </div>
+  } @else {
+    <ul class="crud__list">
+      @for (task of tasks(); track task.id) {
+        <li class="crud__item">
+          <div>
+            <strong>{{ task.title }}</strong>
+            <p>
+              <span class="queue__level" [attr.data-level]="task.priority">{{ task.priority }}</span>
+              · {{ task.status }}
+              @if (task.dueDate) {
+                · due {{ task.dueDate }}
+              }
+            </p>
+          </div>
+          @if (isOpen(task)) {
+            <button mat-stroked-button type="button" (click)="markComplete(task)">
+              <mat-icon>check</mat-icon>
+              Complete
+            </button>
+          } @else {
+            <span class="crud__done">Done</span>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
