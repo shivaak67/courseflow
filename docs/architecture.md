@@ -25,11 +25,17 @@ Syncs Canvas LMS courses and assignments, lets students refine effort/difficulty
 
 `core` (auth, guards, interceptors, services), `shared`, `features` (auth, dashboard, courses, assignments, calendar, work-queue, study-sessions), `layout`, `environments`
 
-## Core entities
+## Core entities (planning pivot)
 
-User → Course → Assignment; User → CanvasConnection; User + Assignment → StudySession
+**Target model (V6–V7):**  
+User → Category; User → Goal → Project → Task → ScheduleBlock;  
+User → Routine | CalendarEvent | Reminder | Notification | TimeEntry;  
+User → NotificationSettings  
 
-Ownership: all queries scoped by authenticated `userId`. Cross-user access returns 404.
+**Legacy academic (still in DB until cleanup):** Course, Assignment, StudySession, CanvasConnection.
+
+Ownership: all queries scoped by authenticated `userId`. Cross-user access returns 404.  
+**No Canvas. No auto-priority / decision engine. Manual priority and scheduling only.**
 
 ## Auth (chosen)
 

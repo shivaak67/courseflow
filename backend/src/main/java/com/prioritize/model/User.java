@@ -42,6 +42,15 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    @Column(name = "timezone", nullable = false, length = 64)
+    private String timezone = "UTC";
+
+    @Column(name = "phone_number", length = 32)
+    private String phoneNumber;
+
+    @Column(name = "phone_verified", nullable = false)
+    private boolean phoneVerified;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -52,6 +61,9 @@ public class User {
     void onCreate() {
         if (id == null) {
             id = UUID.randomUUID();
+        }
+        if (timezone == null) {
+            timezone = "UTC";
         }
         Instant now = Instant.now();
         createdAt = now;
@@ -125,6 +137,30 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public boolean isPhoneVerified() {
+        return phoneVerified;
+    }
+
+    public void setPhoneVerified(boolean phoneVerified) {
+        this.phoneVerified = phoneVerified;
     }
 
     public Instant getCreatedAt() {
