@@ -4,14 +4,111 @@
       <p class="prio-kicker">Preferences</p>
       <h1 class="prio-title">Settings</h1>
       <p class="prio-lede">
-        Tune notifications, calendar defaults, and account options when this area ships.
+        Choose how Prioritize reaches you, and set in-app reminders for open tasks.
       </p>
     </div>
   </header>
 
-  <div class="prio-empty prio-panel">
-    <div class="prio-empty__mark"><mat-icon>settings</mat-icon></div>
-    <h3>Settings coming soon</h3>
-    <p>This page is a placeholder while planning core APIs and CRUD screens land first.</p>
-  </div>
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading settings…</p>
+  } @else {
+    <section class="settings__block prio-panel">
+      <h2 class="settings__heading">Notification channels</h2>
+      <p class="settings__lede">Toggle which channels can deliver reminders and alerts.</p>
+
+      <form class="settings__form" [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+        <label class="settings__toggle">
+          <input type="checkbox" formControlName="inAppEnabled" />
+          <span>
+            <strong>In-app</strong>
+            <small>Show alerts inside Prioritize</small>
+          </span>
+        </label>
+        <label class="settings__toggle">
+          <input type="checkbox" formControlName="smsEnabled" />
+          <span>
+            <strong>SMS</strong>
+            <small>SMS delivery coming soon</small>
+          </span>
+        </label>
+        <label class="settings__toggle">
+          <input type="checkbox" formControlName="emailEnabled" />
+          <span>
+            <strong>Email</strong>
+            <small>Send reminders to your account email</small>
+          </span>
+        </label>
+        <div class="settings__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="savingSettings()">
+            <mat-icon>save</mat-icon>
+            {{ savingSettings() ? 'Saving…' : 'Save settings' }}
+          </button>
+          @if (settingsSaved()) {
+            <span class="settings__saved"><mat-icon>check_circle</mat-icon> Saved</span>
+          }
+        </div>
+      </form>
+    </section>
+
+    <section class="settings__block prio-panel">
+      <h2 class="settings__heading">Upcoming reminders</h2>
+      <p class="settings__lede">Create an in-app reminder for a selected task.</p>
+
+      <form class="crud__form" [formGroup]="reminderForm" (ngSubmit)="createReminder()">
+        <label class="crud__field">
+          <span>Task</span>
+          <select formControlName="taskId">
+            <option value="" disabled>Select an open task</option>
+            @for (task of openTasks(); track task.id) {
+              <option [value]="task.id">{{ task.title }}</option>
+            }
+          </select>
+        </label>
+        <label class="crud__field">
+          <span>When</span>
+          <input type="datetime-local" formControlName="reminderLocal" />
+        </label>
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="savingReminder() || openTasks().length === 0"
+        >
+          <mat-icon>notifications_active</mat-icon>
+          {{ savingReminder() ? 'Adding…' : 'Add reminder' }}
+        </button>
+      </form>
+
+      @if (pendingReminders().length === 0) {
+        <div class="prio-empty">
+          <div class="prio-empty__mark"><mat-icon>notifications_none</mat-icon></div>
+          <h3>No pending reminders</h3>
+          <p>Pick a task and time above to schedule an in-app nudge.</p>
+        </div>
+      } @else {
+        <ul class="crud__list">
+          @for (reminder of pendingReminders(); track reminder.id) {
+            <li class="crud__item">
+              <div>
+                <strong>{{ taskTitle(reminder) }}</strong>
+                <p>
+                  {{ formatReminderAt(reminder.reminderAt) }}
+                  · {{ reminder.channel }}
+                  · {{ reminder.status }}
+                </p>
+              </div>
+              <button mat-stroked-button type="button" (click)="cancelReminder(reminder)">
+                <mat-icon>cancel</mat-icon>
+                Cancel
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
 </section>

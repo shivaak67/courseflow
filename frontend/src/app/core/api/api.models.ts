@@ -273,3 +273,131 @@ export interface UpdateCalendarEventRequest {
   endAt?: string;
   allDay?: boolean;
 }
+
+/** Routines */
+
+export type RecurrenceType = 'DAILY' | 'WEEKLY' | 'SELECTED_WEEKDAYS' | 'MONTHLY';
+
+export interface RoutineDto {
+  id: string;
+  categoryId: string | null;
+  title: string;
+  recurrenceType: RecurrenceType;
+  daysOfWeek: string | null;
+  intervalValue: number;
+  startTime: string;
+  endTime: string | null;
+  startDate: string;
+  endDate: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRoutineRequest {
+  title: string;
+  categoryId?: string | null;
+  recurrenceType: RecurrenceType;
+  daysOfWeek?: string | null;
+  intervalValue?: number;
+  startTime: string;
+  endTime?: string | null;
+  startDate: string;
+  endDate?: string | null;
+  active?: boolean;
+}
+
+export interface UpdateRoutineRequest {
+  title: string;
+  categoryId?: string | null;
+  recurrenceType: RecurrenceType;
+  daysOfWeek?: string | null;
+  intervalValue?: number;
+  startTime: string;
+  endTime?: string | null;
+  startDate: string;
+  endDate?: string | null;
+  active?: boolean;
+}
+
+export interface RoutineOccurrenceDto {
+  routineId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string | null;
+  recurrenceType: RecurrenceType;
+}
+
+/** Reminders & notifications */
+
+export type ReminderEntityType =
+  | 'TASK'
+  | 'SCHEDULE_BLOCK'
+  | 'ROUTINE'
+  | 'CALENDAR_EVENT'
+  | 'GOAL';
+
+export type NotificationChannel = 'IN_APP' | 'SMS' | 'EMAIL';
+
+export type ReminderStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'SENT'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export interface ReminderDto {
+  id: string;
+  relatedEntityType: ReminderEntityType;
+  relatedEntityId: string;
+  reminderAt: string;
+  channel: NotificationChannel;
+  status: ReminderStatus;
+  sentAt: string | null;
+  attemptCount: number;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateReminderRequest {
+  relatedEntityType: ReminderEntityType;
+  relatedEntityId: string;
+  reminderAt: string;
+  channel: NotificationChannel;
+}
+
+export interface UpdateReminderRequest {
+  relatedEntityType?: ReminderEntityType;
+  relatedEntityId?: string;
+  reminderAt?: string;
+  channel?: NotificationChannel;
+  status?: ReminderStatus;
+}
+
+export interface NotificationDto {
+  id: string;
+  title: string;
+  body: string | null;
+  relatedEntityType: string | null;
+  relatedEntityId: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationSettingsDto {
+  smsEnabled: boolean;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  defaultReminderOffsetsMinutes: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateNotificationSettingsRequest {
+  smsEnabled: boolean;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  defaultReminderOffsetsMinutes?: string | null;
+}

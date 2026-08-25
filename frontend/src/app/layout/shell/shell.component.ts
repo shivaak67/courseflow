@@ -27,6 +27,7 @@ export class ShellComponent {
     { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
     { label: 'Tasks', path: '/tasks', icon: 'checklist' },
     { label: 'Schedule', path: '/schedule', icon: 'schedule' },
+    { label: 'Routines', path: '/routines', icon: 'autorenew' },
     { label: 'Goals', path: '/goals', icon: 'flag' },
     { label: 'Projects', path: '/projects', icon: 'folder_open' },
     { label: 'Calendar', path: '/calendar', icon: 'calendar_month' },

@@ -12,20 +12,30 @@ import {
   CreateCategoryRequest,
   CreateGoalRequest,
   CreateProjectRequest,
+  CreateReminderRequest,
+  CreateRoutineRequest,
   CreateScheduleBlockRequest,
   CreateStudySessionRequest,
   CreateTaskRequest,
   DashboardSummary,
   GoalDto,
+  NotificationDto,
+  NotificationSettingsDto,
   PrioritizedAssignment,
   ProjectDto,
+  ReminderDto,
+  RoutineDto,
+  RoutineOccurrenceDto,
   ScheduleBlockDto,
   StudySessionDto,
   TaskDto,
   UpdateCalendarEventRequest,
   UpdateCategoryRequest,
   UpdateGoalRequest,
+  UpdateNotificationSettingsRequest,
   UpdateProjectRequest,
+  UpdateReminderRequest,
+  UpdateRoutineRequest,
   UpdateScheduleBlockRequest,
   UpdateTaskRequest,
 } from './api.models';
@@ -173,5 +183,76 @@ export class ApiService {
 
   deleteCalendarEvent(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/api/calendar-events/${id}`);
+  }
+
+  // --- Routines ---
+
+  listRoutines(): Observable<RoutineDto[]> {
+    return this.http.get<RoutineDto[]>(`${this.base}/api/routines`);
+  }
+
+  createRoutine(body: CreateRoutineRequest): Observable<RoutineDto> {
+    return this.http.post<RoutineDto>(`${this.base}/api/routines`, body);
+  }
+
+  updateRoutine(id: string, body: UpdateRoutineRequest): Observable<RoutineDto> {
+    return this.http.put<RoutineDto>(`${this.base}/api/routines/${id}`, body);
+  }
+
+  deleteRoutine(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/routines/${id}`);
+  }
+
+  listRoutineOccurrences(from: string, to: string): Observable<RoutineOccurrenceDto[]> {
+    return this.http.get<RoutineOccurrenceDto[]>(`${this.base}/api/routines/occurrences`, {
+      params: { from, to },
+    });
+  }
+
+  // --- Reminders ---
+
+  listReminders(): Observable<ReminderDto[]> {
+    return this.http.get<ReminderDto[]>(`${this.base}/api/reminders`);
+  }
+
+  createReminder(body: CreateReminderRequest): Observable<ReminderDto> {
+    return this.http.post<ReminderDto>(`${this.base}/api/reminders`, body);
+  }
+
+  updateReminder(id: string, body: UpdateReminderRequest): Observable<ReminderDto> {
+    return this.http.put<ReminderDto>(`${this.base}/api/reminders/${id}`, body);
+  }
+
+  deleteReminder(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/reminders/${id}`);
+  }
+
+  cancelReminder(id: string): Observable<ReminderDto> {
+    return this.http.post<ReminderDto>(`${this.base}/api/reminders/${id}/cancel`, {});
+  }
+
+  // --- Notifications ---
+
+  listNotifications(): Observable<NotificationDto[]> {
+    return this.http.get<NotificationDto[]>(`${this.base}/api/notifications`);
+  }
+
+  markNotificationRead(id: string): Observable<NotificationDto> {
+    return this.http.post<NotificationDto>(`${this.base}/api/notifications/${id}/read`, {});
+  }
+
+  // --- Notification settings ---
+
+  getNotificationSettings(): Observable<NotificationSettingsDto> {
+    return this.http.get<NotificationSettingsDto>(`${this.base}/api/notification-settings`);
+  }
+
+  updateNotificationSettings(
+    body: UpdateNotificationSettingsRequest,
+  ): Observable<NotificationSettingsDto> {
+    return this.http.put<NotificationSettingsDto>(
+      `${this.base}/api/notification-settings`,
+      body,
+    );
   }
 }

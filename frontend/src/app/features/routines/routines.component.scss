@@ -12,96 +12,17 @@
   font-size: 0.92rem;
 }
 
-.settings__block {
-  padding: 1.15rem 1.2rem;
-  margin-bottom: 1.1rem;
-}
-
-.settings__heading {
-  margin: 0;
-  font-family: var(--prio-font-display);
-  font-size: 1.25rem;
-}
-
-.settings__lede {
-  margin: 0.35rem 0 1rem;
-  color: var(--prio-ink-soft);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.settings__form {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.settings__toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid var(--prio-line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
-  cursor: pointer;
-}
-
-.settings__toggle input {
-  margin-top: 0.2rem;
-  width: 1.05rem;
-  height: 1.05rem;
-  accent-color: var(--prio-teal);
-  flex-shrink: 0;
-}
-
-.settings__toggle strong {
-  display: block;
-  font-size: 0.95rem;
-  color: var(--prio-ink);
-}
-
-.settings__toggle small {
-  display: block;
-  margin-top: 0.2rem;
-  color: var(--prio-ink-soft);
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-
-.settings__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  margin-top: 0.35rem;
-}
-
-.settings__actions button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.settings__saved {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  color: var(--prio-teal-deep);
-  font-size: 0.86rem;
-  font-weight: 600;
-}
-
-.settings__saved mat-icon {
-  font-size: 1.1rem;
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
 .crud__form {
   display: grid;
-  grid-template-columns: 1.4fr 1fr auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   gap: 0.75rem;
   align-items: end;
-  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.crud__field--title {
+  grid-column: 1 / -1;
 }
 
 .crud__field {
@@ -127,11 +48,47 @@
   color: var(--prio-ink);
 }
 
+.crud__hint {
+  color: var(--prio-ink-soft);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.crud__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-bottom: 0.55rem;
+  color: var(--prio-ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.crud__check input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--prio-teal);
+}
+
 .crud__form button {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   white-space: nowrap;
+}
+
+.routines__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.routines__heading {
+  margin: 0 0 0.85rem;
+  font-family: var(--prio-font-display);
+  font-size: 1.2rem;
+  color: var(--prio-ink);
 }
 
 .crud__note {
@@ -163,11 +120,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem;
-  padding: 0.95rem 1rem;
+  padding: 1rem 1.1rem;
   border: 1px solid var(--prio-line);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.74);
   transition: transform 0.25s var(--prio-ease), box-shadow 0.25s var(--prio-ease);
+}
+
+.crud__item--compact {
+  padding: 0.85rem 1rem;
 }
 
 .crud__item:hover {
@@ -182,9 +143,13 @@
 }
 
 .crud__item p {
-  margin: 0.3rem 0 0;
+  margin: 0.35rem 0 0;
   color: var(--prio-ink-soft);
   font-size: 0.86rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .crud__item button {
@@ -194,8 +159,20 @@
   flex-shrink: 0;
 }
 
-.prio-empty {
-  margin-top: 0.25rem;
+.queue__level {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(11, 110, 106, 0.12);
+  color: var(--prio-teal-deep);
+}
+
+.queue__level[data-active='false'] {
+  background: rgba(80, 96, 110, 0.12);
+  color: #4d5b66;
 }
 
 .prio-empty h3 {
@@ -207,11 +184,23 @@
 .prio-empty p {
   margin: 0;
   color: var(--prio-ink-soft);
-  max-width: 32rem;
-  line-height: 1.5;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 980px) {
+  .routines__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crud__form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .crud__form button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
   .crud__form {
     grid-template-columns: 1fr;
   }

@@ -1,0 +1,123 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Habits</p>
+      <h1 class="prio-title">Routines</h1>
+      <p class="prio-lede">
+        Define recurring blocks — daily, weekly, or selected weekdays — and preview the next two weeks.
+      </p>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <form class="crud__form prio-panel" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="crud__field crud__field--title">
+      <span>Title</span>
+      <input type="text" formControlName="title" placeholder="e.g. Morning review" />
+    </label>
+    <label class="crud__field">
+      <span>Recurrence</span>
+      <select formControlName="recurrenceType">
+        @for (type of recurrenceTypes; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field">
+      <span>Days of week</span>
+      <input
+        type="text"
+        formControlName="daysOfWeek"
+        placeholder="1,3,5"
+        aria-describedby="days-hint"
+      />
+      <small id="days-hint" class="crud__hint">Mon=1 … Sun=7 (for WEEKLY / SELECTED_WEEKDAYS)</small>
+    </label>
+    <label class="crud__field">
+      <span>Start time</span>
+      <input type="time" formControlName="startTime" />
+    </label>
+    <label class="crud__field">
+      <span>End time</span>
+      <input type="time" formControlName="endTime" />
+    </label>
+    <label class="crud__field">
+      <span>Start date</span>
+      <input type="date" formControlName="startDate" />
+    </label>
+    <label class="crud__field">
+      <span>End date</span>
+      <input type="date" formControlName="endDate" />
+    </label>
+    <label class="crud__check">
+      <input type="checkbox" formControlName="active" />
+      <span>Active</span>
+    </label>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+      <mat-icon>add</mat-icon>
+      {{ saving() ? 'Adding…' : 'Add routine' }}
+    </button>
+  </form>
+
+  <div class="routines__grid">
+    <section class="routines__col">
+      <h2 class="routines__heading">Your routines</h2>
+      @if (loading()) {
+        <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading routines…</p>
+      } @else if (routines().length === 0) {
+        <div class="prio-empty">
+          <div class="prio-empty__mark"><mat-icon>autorenew</mat-icon></div>
+          <h3>No routines yet</h3>
+          <p>Add a recurring habit above to get started.</p>
+        </div>
+      } @else {
+        <ul class="crud__list">
+          @for (routine of routines(); track routine.id) {
+            <li class="crud__item">
+              <div>
+                <strong>{{ routine.title }}</strong>
+                <p>
+                  <span class="queue__level" [attr.data-active]="routine.active">
+                    {{ routine.active ? 'ACTIVE' : 'PAUSED' }}
+                  </span>
+                  · {{ summary(routine) }}
+                </p>
+              </div>
+              <button mat-stroked-button type="button" (click)="remove(routine)">
+                <mat-icon>delete</mat-icon>
+                Remove
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="routines__col">
+      <h2 class="routines__heading">Upcoming (14 days)</h2>
+      @if (loading()) {
+        <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading occurrences…</p>
+      } @else if (occurrences().length === 0) {
+        <div class="prio-empty">
+          <div class="prio-empty__mark"><mat-icon>event_repeat</mat-icon></div>
+          <h3>No occurrences</h3>
+          <p>Active routines will list here for the next two weeks.</p>
+        </div>
+      } @else {
+        <ul class="crud__list">
+          @for (occ of occurrences(); track occ.routineId + occ.date + occ.startTime) {
+            <li class="crud__item crud__item--compact">
+              <div>
+                <strong>{{ occ.title }}</strong>
+                <p>{{ formatOccurrence(occ) }} · {{ occ.recurrenceType }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</section>

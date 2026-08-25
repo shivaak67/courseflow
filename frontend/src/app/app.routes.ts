@@ -51,6 +51,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'routines',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/routines/routines.component').then(
+            (m) => m.RoutinesComponent,
+          ),
+      },
+      {
         path: 'goals',
         canActivate: [authGuard],
         loadComponent: () =>
