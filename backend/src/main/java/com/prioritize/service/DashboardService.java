@@ -1,8 +1,6 @@
 package com.prioritize.service;
 
-import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Comparator;
@@ -10,42 +8,43 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.prioritize.dto.DashboardSummaryResponse;
-import com.prioritize.dto.PriorityInput;
-import com.prioritize.dto.PriorityLevel;
-import com.prioritize.dto.PriorityResult;
-import com.prioritize.model.Assignment;
-import com.prioritize.repository.AssignmentRepository;
+import com.prioritize.model.Project;
+import com.prioritize.model.Task;
+import com.prioritize.model.TaskPriority;
+import com.prioritize.model.TaskStatus;
+import com.prioritize.repository.ProjectRepository;
+import com.prioritize.repository.TaskRepository;
 
 @Service
 public class DashboardService {
 
-    private final AssignmentRepository assignmentRepository;
-    private final PriorityService priorityService;
+    private final TaskRepository taskRepository;
+    private final ProjectRepository projectRepository;
     private final Clock clock;
 
     public DashboardService(
-            AssignmentRepository assignmentRepository,
-            PriorityService priorityService,
+            TaskRepository taskRepository,
+            ProjectRepository projectRepository,
             Clock clock) {
-        this.assignmentRepository = assignmentRepository;
-        this.priorityService = priorityService;
+        this.taskRepository = taskRepository;
+        this.projectRepository = projectRepository;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public DashboardSummaryResponse summary(UUID userId) {
-        Instant now = clock.instant();
-        LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
-        Instant startOfToday = today.atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant endOfToday = today.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant endOfWeek = today.plusDays(7).atStartOfDay().toInstant(ZoneOffset.UTC);
+        LocalDate today = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
+        LocalDate endOfWeekExclusive = today.plusDays(7);
 
-        List<Assignment> assignments = assignmentRepository.findFiltered(userId, null, null);
+        List<Task> tasks = taskRepository.findFiltered(userId, null, null, null);
+        Map<UUID, String> projectNames = projectRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .collect(Collectors.toMap(Project::getId, Project::getTitle, (a, b) -> a, LinkedHashMap::new));
 
         int dueToday = 0;
         int dueThisWeek = 0;
@@ -55,61 +54,71 @@ public class DashboardService {
         int remaining = 0;
         double hoursThisWeek = 0.0;
 
-        Map<UUID, DashboardSummaryResponse.WorkloadByCourse> workload = new LinkedHashMap<>();
+        Map<UUID, DashboardSummaryResponse.WorkloadByProject> workload = new LinkedHashMap<>();
 
-        for (Assignment assignment : assignments) {
-            if (assignment.isCompleted()) {
+        for (Task task : tasks) {
+            if (task.getStatus() == TaskStatus.COMPLETED) {
                 completed++;
             }
 
-            boolean open = !assignment.isCompleted() && !assignment.isSubmitted();
+            boolean open = task.getStatus() == TaskStatus.TODO || task.getStatus() == TaskStatus.IN_PROGRESS;
             if (!open) {
                 continue;
             }
 
             remaining++;
-            PriorityResult priority = priorityService.calculate(toPriorityInput(assignment));
-            if (priority.level() == PriorityLevel.HIGH || priority.level() == PriorityLevel.CRITICAL) {
+
+            if (task.getPriority() == TaskPriority.HIGH || task.getPriority() == TaskPriority.URGENT) {
                 highPriority++;
             }
 
-            Instant due = assignment.getDueDate();
+            LocalDate due = task.getDueDate();
             if (due != null) {
-                if (!due.isBefore(startOfToday) && due.isBefore(endOfToday)) {
+                if (due.equals(today)) {
                     dueToday++;
                 }
-                if (due.isBefore(now)) {
+                if (due.isBefore(today)) {
                     overdue++;
                 }
-                if (!due.isBefore(startOfToday) && due.isBefore(endOfWeek)) {
+                if (!due.isBefore(today) && due.isBefore(endOfWeekExclusive)) {
                     dueThisWeek++;
-                    hoursThisWeek += hoursOrZero(assignment.getEstimatedHours());
+                    hoursThisWeek += minutesToHours(task.getEstimatedMinutes());
                 }
             }
 
-            UUID courseId = assignment.getCourse().getId();
-            DashboardSummaryResponse.WorkloadByCourse existing = workload.get(courseId);
+            UUID projectId = task.getProjectId();
+            if (projectId == null) {
+                continue;
+            }
+
+            String projectName = projectNames.getOrDefault(projectId, "Unknown project");
+            DashboardSummaryResponse.WorkloadByProject existing = workload.get(projectId);
             if (existing == null) {
                 workload.put(
-                        courseId,
-                        new DashboardSummaryResponse.WorkloadByCourse(
-                                courseId,
-                                assignment.getCourse().getName(),
+                        projectId,
+                        new DashboardSummaryResponse.WorkloadByProject(
+                                projectId,
+                                projectName,
                                 1,
-                                hoursOrZero(assignment.getEstimatedHours())));
+                                minutesToHours(task.getEstimatedMinutes())));
             } else {
                 workload.put(
-                        courseId,
-                        new DashboardSummaryResponse.WorkloadByCourse(
-                                existing.courseId(),
-                                existing.courseName(),
-                                existing.assignmentCount() + 1,
-                                existing.estimatedHours() + hoursOrZero(assignment.getEstimatedHours())));
+                        projectId,
+                        new DashboardSummaryResponse.WorkloadByProject(
+                                existing.projectId(),
+                                existing.projectName(),
+                                existing.taskCount() + 1,
+                                existing.estimatedHours() + minutesToHours(task.getEstimatedMinutes())));
             }
         }
 
-        List<DashboardSummaryResponse.WorkloadByCourse> workloadByCourse = workload.values().stream()
-                .sorted(Comparator.comparing(DashboardSummaryResponse.WorkloadByCourse::estimatedHours).reversed())
+        List<DashboardSummaryResponse.WorkloadByProject> workloadByProject = workload.values().stream()
+                .sorted(Comparator.comparing(DashboardSummaryResponse.WorkloadByProject::estimatedHours).reversed())
+                .map(w -> new DashboardSummaryResponse.WorkloadByProject(
+                        w.projectId(),
+                        w.projectName(),
+                        w.taskCount(),
+                        roundHours(w.estimatedHours())))
                 .toList();
 
         return new DashboardSummaryResponse(
@@ -120,27 +129,11 @@ public class DashboardService {
                 completed,
                 remaining,
                 roundHours(hoursThisWeek),
-                workloadByCourse);
+                workloadByProject);
     }
 
-    private PriorityInput toPriorityInput(Assignment assignment) {
-        return new PriorityInput(
-                assignment.getDueDate(),
-                toBigDecimal(assignment.getPointsPossible()),
-                null,
-                assignment.getDifficulty() != null ? assignment.getDifficulty().name() : null,
-                toBigDecimal(assignment.getEstimatedHours()),
-                assignment.getPersonalPriority(),
-                assignment.isCompleted(),
-                assignment.isSubmitted());
-    }
-
-    private static BigDecimal toBigDecimal(Double value) {
-        return value == null ? null : BigDecimal.valueOf(value);
-    }
-
-    private static double hoursOrZero(Double value) {
-        return value == null ? 0.0 : value;
+    private static double minutesToHours(Integer minutes) {
+        return minutes == null ? 0.0 : minutes / 60.0;
     }
 
     private static double roundHours(double value) {

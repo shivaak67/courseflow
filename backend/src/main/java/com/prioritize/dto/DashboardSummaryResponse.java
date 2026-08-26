@@ -11,12 +11,12 @@ public record DashboardSummaryResponse(
         int completedCount,
         int remainingCount,
         double estimatedHoursRemainingThisWeek,
-        List<WorkloadByCourse> workloadByCourse) {
+        List<WorkloadByProject> workloadByProject) {
 
-    public record WorkloadByCourse(
-            UUID courseId,
-            String courseName,
-            int assignmentCount,
+    public record WorkloadByProject(
+            UUID projectId,
+            String projectName,
+            int taskCount,
             double estimatedHours) {
     }
 }

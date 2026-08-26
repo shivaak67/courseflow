@@ -37,30 +37,3 @@ app:
     success-redirect: ${APP_OAUTH_SUCCESS_REDIRECT:http://localhost:4200/auth/callback}
     google:
       enabled: ${GOOGLE_OAUTH_ENABLED:false}
-  canvas:
-    base-url: ${CANVAS_BASE_URL:}
-    api-token: ${CANVAS_API_TOKEN:}
-    mock-enabled: ${CANVAS_MOCK_ENABLED:false}
-
-prioritize:
-  scoring:
-    weights:
-      urgency: 0.35
-      points: 0.20
-      difficulty: 0.15
-      workload: 0.15
-      personal-priority: 0.15
-    thresholds:
-      critical: 80
-      high: 60
-      medium: 40
-    defaults:
-      no-due-date-urgency: 35
-      missing-points: 40
-      missing-difficulty: 50
-      missing-workload: 40
-      missing-personal-priority: 50
-      max-workload-hours: 20
-      max-absolute-points: 100
-      urgency-horizon-days: 14
-      urgency-floor: 15

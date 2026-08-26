@@ -6,6 +6,8 @@ All `/api/**` routes except auth register/login require `Authorization: Bearer <
 
 DTOs only — never expose JPA entities.
 
+**Planning APIs** (categories, goals, projects, tasks, schedule-blocks, calendar-events, routines, reminders, notifications, time-entries, insights) are the product surface. Legacy Canvas / courses / assignments / prioritized / study-sessions endpoints are deprecated and may still exist until cleanup—prefer planning resources.
+
 ---
 
 ## Auth
@@ -70,86 +72,62 @@ Response `200`: `user` object as above.
 
 ---
 
-## Courses
+## Planning APIs
 
-### GET `/api/courses`
+Standard CRUD unless noted. All scoped to the authenticated user; missing/not-owned → `404`.
 
-Response `200`: `CourseResponse[]`
+| Resource | Base path | Notes |
+|----------|-----------|--------|
+| Categories | `/api/categories` | `GET` list, `POST` create, `GET/PUT/DELETE /{id}` |
+| Goals | `/api/goals` | Optional `categoryId`; status: `ACTIVE\|COMPLETED\|PAUSED\|ARCHIVED` |
+| Projects | `/api/projects` | Optional `categoryId`, `goalId`; same status enum as goals |
+| Tasks | `/api/tasks` | Optional `categoryId`, `projectId`; priority: `LOW\|MEDIUM\|HIGH\|URGENT` (manual); status: `TODO\|IN_PROGRESS\|COMPLETED\|CANCELLED` |
+| Schedule blocks | `/api/schedule-blocks` | Links a `taskId` to `startAt`/`endAt`; optional date-range query on list |
+| Calendar events | `/api/calendar-events` | Personal events (not tasks); optional date-range query on list |
+| Routines | `/api/routines` | Recurrence: `DAILY\|WEEKLY\|SELECTED_WEEKDAYS\|MONTHLY`; `GET /occurrences?from=&to=` |
+| Reminders | `/api/reminders` | Entity types: `TASK\|SCHEDULE_BLOCK\|ROUTINE\|CALENDAR_EVENT\|GOAL`; channels: `IN_APP\|SMS\|EMAIL`; `POST /{id}/cancel` |
+| Notifications | `/api/notifications` | In-app inbox; `POST /{id}/read`, `DELETE /{id}` |
+| Notification settings | `/api/notification-settings` | `GET` / `PUT` (sms / in-app / email flags; SMS delivery not fully wired yet) |
+| Time entries | `/api/time-entries` | Logged work against a `taskId` |
+| Insights | `/api/insights/summary` | Query: `from`, `to` — completion and minutes aggregates |
 
-```json
-{
-  "id": "uuid",
-  "canvasCourseId": "string|null",
-  "name": "string",
-  "courseCode": "string|null",
-  "term": "string|null",
-  "createdAt": "iso-8601",
-  "updatedAt": "iso-8601"
-}
-```
-
-### POST `/api/courses`
-
-Request: `{ "name", "courseCode?", "term?" }` → `201` `CourseResponse`
-
-### GET `/api/courses/{id}` → `200` | `404`
-
-### PUT `/api/courses/{id}` → `200` | `404`
-
-### DELETE `/api/courses/{id}` → `204` | `404`
-
----
-
-## Assignments
-
-### AssignmentResponse
+### Task (representative DTO)
 
 ```json
 {
   "id": "uuid",
-  "courseId": "uuid",
-  "courseName": "string",
-  "canvasAssignmentId": "string|null",
+  "categoryId": "uuid|null",
+  "projectId": "uuid|null",
   "title": "string",
   "description": "string|null",
-  "dueDate": "iso-8601|null",
-  "pointsPossible": "number|null",
-  "completed": false,
-  "submitted": false,
-  "difficulty": "EASY|MEDIUM|HARD|null",
-  "estimatedHours": "number|null",
-  "actualHours": "number",
-  "personalPriority": "number|null",
-  "priorityScore": "number|null",
-  "priorityLevel": "LOW|MEDIUM|HIGH|CRITICAL|null",
+  "dueDate": "date|null",
+  "dueTime": "time|null",
+  "estimatedMinutes": "number|null",
+  "actualMinutes": 0,
+  "priority": "LOW|MEDIUM|HIGH|URGENT",
+  "status": "TODO|IN_PROGRESS|COMPLETED|CANCELLED",
+  "completedAt": "iso-8601|null",
   "createdAt": "iso-8601",
   "updatedAt": "iso-8601"
 }
 ```
 
-### GET `/api/assignments` — query: `courseId?`, `completed?`
-
-### POST `/api/assignments` — create (manual)
-
-### GET `/api/assignments/{id}`
-
-### PUT `/api/assignments/{id}` — editable: estimatedHours, difficulty, personalPriority, completed, actualHours, title/description when manual
-
-### GET `/api/assignments/upcoming`
-
-### GET `/api/assignments/overdue`
-
-### GET `/api/assignments/prioritized`
-
-Response item extends AssignmentResponse:
+### Insights summary (representative)
 
 ```json
 {
-  "reasons": ["Due in 2 days", "Worth high point value", "Marked HARD"]
+  "from": "date",
+  "to": "date",
+  "tasksCreated": 0,
+  "tasksCompleted": 0,
+  "openTasks": 0,
+  "totalMinutesLogged": 0,
+  "estimatedMinutesOpen": 0,
+  "completionRate": 0,
+  "minutesByDay": [{ "date": "date", "minutes": 0 }],
+  "topTasksByMinutes": [{ "taskId": "uuid", "title": "string", "minutes": 0 }]
 }
 ```
-
-Ordered by `priorityScore` descending. Excludes completed/submitted by default.
 
 ---
 
@@ -157,58 +135,20 @@ Ordered by `priorityScore` descending. Excludes completed/submitted by default.
 
 ### GET `/api/dashboard/summary`
 
-```json
-{
-  "dueTodayCount": 0,
-  "dueThisWeekCount": 0,
-  "overdueCount": 0,
-  "highPriorityCount": 0,
-  "completedCount": 0,
-  "remainingCount": 0,
-  "estimatedHoursRemainingThisWeek": 0,
-  "workloadByCourse": [
-    { "courseId": "uuid", "courseName": "string", "assignmentCount": 0, "estimatedHours": 0 }
-  ]
-}
-```
+Legacy academic-shaped summary may still be present during the pivot; prefer `/api/insights/summary` for planning metrics.
 
 ---
 
-## Canvas
+## Deprecated (legacy academic / Canvas)
 
-### POST `/api/canvas/sync`
+Do not build new UI against these. They may remain until a cleanup migration removes Controllers and tables (`courses`, `assignments`, `study_sessions`, Canvas connection).
 
-Response `200`:
-
-```json
-{
-  "coursesUpserted": 0,
-  "assignmentsUpserted": 0,
-  "lastSyncedAt": "iso-8601"
-}
-```
-
----
-
-## Study sessions
-
-### POST `/api/study-sessions`
-
-Request:
-
-```json
-{
-  "assignmentId": "uuid",
-  "startedAt": "iso-8601|null",
-  "endedAt": "iso-8601|null",
-  "durationMinutes": 60,
-  "notes": "string|null"
-}
-```
-
-### GET `/api/study-sessions`
-
-Response: session list for current user.
+| Endpoint | Status |
+|----------|--------|
+| `/api/courses/**` | Deprecated |
+| `/api/assignments/**` (incl. `/upcoming`, `/overdue`, `/prioritized`) | Deprecated — no decision-engine scoring |
+| `POST /api/canvas/sync` | Deprecated — no Canvas product feature |
+| `/api/study-sessions/**` | Deprecated — use `/api/time-entries` |
 
 ---
 

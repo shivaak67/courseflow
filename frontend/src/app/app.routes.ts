@@ -96,8 +96,6 @@ export const routes: Routes = [
             (m) => m.SettingsComponent,
           ),
       },
-      { path: 'work-queue', redirectTo: 'tasks', pathMatch: 'full' },
-      { path: 'courses', redirectTo: 'tasks', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

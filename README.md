@@ -1,19 +1,20 @@
 # Prioritize
 
-Academic productivity platform for college students. Syncs courses and assignments from Canvas LMS, ranks work with a transparent priority engine, and helps students decide what to work on first.
+Personal productivity and planning platform. Organize work as Goals → Projects → Tasks, block time on a schedule, manage calendar events and routines, and track progress with reminders, insights, and time entries.
 
 ## Overview
 
-Prioritize connects to Canvas, imports courses and assignments, and combines deadlines, point value, difficulty, estimated effort, and personal priority into a clear work queue. Students get a dashboard, calendar, and “What Should I Work On?” view. Power BI is used separately for historical analytics.
+Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself—there is no Canvas LMS sync and no automatic priority / decision engine. The app covers schedule, calendar, routines, reminders, time tracking, and insights. Power BI can connect separately for historical analytics.
 
 ## Features
 
 - Email/password and Google OAuth authentication (JWT)
-- Canvas course and assignment sync
-- Manual course and assignment management
-- Smart priority scoring (configurable weights)
-- Dashboard, calendar, and recommended work queue
-- Study session / actual hours tracking
+- Categories, goals, projects, and tasks (manual priority)
+- Schedule blocks (time-blocking) and personal calendar events
+- Recurring routines and occurrences
+- Reminders and in-app notifications (SMS/email channels planned; not fully wired yet)
+- Time entries and insights summary
+- Dashboard overview
 - Power BI–ready PostgreSQL schema
 
 *(Sections expand as each development phase lands.)*
@@ -24,7 +25,7 @@ Monorepo with a Spring Boot API, Angular SPA, and PostgreSQL.
 
 - Backend enforces ownership and authorization on every resource
 - Frontend consumes REST APIs via Angular services
-- Canvas integration is behind a client interface (mockable for tests)
+- Planning model: Category / Goal / Project / Task plus schedule, calendar, routines, reminders, time tracking
 - Analytics (Power BI) reads the database; it is not the main UI
 
 See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phase plan.
@@ -37,7 +38,6 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
 | Backend | Java, Spring Boot, Spring Security, Spring Data JPA |
 | Database | PostgreSQL |
 | Auth | JWT + Google OAuth 2.0 / OIDC |
-| Integration | Canvas LMS REST API |
 | Analytics | Power BI |
 | DevOps | Docker, Docker Compose, GitHub Actions |
 | Cloud | AWS (S3 + CloudFront, compute, RDS) |
@@ -62,7 +62,6 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
 - Node.js 20+ and npm
 - PostgreSQL 16+ (or Docker)
 - Google Cloud OAuth client (for Google sign-in)
-- Canvas API token (for sync in development)
 
 ### Setup
 
@@ -80,7 +79,7 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
    - API base URL: `http://localhost:8080` (see `src/environments/`)
    - Production build: `npm run build`
 
-Course and assignment APIs require `Authorization: Bearer <JWT>` from `/api/auth/login` or `/api/auth/register`. Cross-user access returns `404`.
+Planning APIs (goals, projects, tasks, etc.) require `Authorization: Bearer <JWT>` from `/api/auth/login` or `/api/auth/register`. Cross-user access returns `404`.
 
 ## Authentication
 
@@ -100,32 +99,25 @@ Course and assignment APIs require `Authorization: Bearer <JWT>` from `/api/auth
 
 Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET` — never commit real values.
 
-## Canvas Integration
+## Planning model
 
-Uses a `CanvasClient` abstraction with an HTTP implementation and a mock client for local demos.
-- Real sync: set `CANVAS_BASE_URL` and `CANVAS_API_TOKEN`, keep `CANVAS_MOCK_ENABLED=false`
-- Mock sync: set `CANVAS_MOCK_ENABLED=true` (no Canvas token required)
-- Endpoint: `POST /api/canvas/sync` (JWT required) upserts courses and assignments by Canvas IDs
-
-## Priority Engine
-
-Weighted, transparent formula (urgency, points, difficulty, workload, personal priority). Assignments are labeled LOW / MEDIUM / HIGH / CRITICAL. Configurable via application settings.
+Work is organized as **Goals → Projects → Tasks**, with optional categories. Priority on tasks is set manually (`LOW` / `MEDIUM` / `HIGH` / `URGENT`). Schedule blocks attach tasks to calendar time; routines, reminders, time entries, and insights support day-to-day planning—not an automated ranking engine.
 
 ## API Overview
 
-REST under `/api/*`. Auth: `/api/auth/*` and Google OAuth endpoints. See [docs/api-contract.md](docs/api-contract.md).
+REST under `/api/*`. Auth: `/api/auth/*` and Google OAuth endpoints. Planning resources supersede the legacy Canvas/courses/assignments contract. See [docs/api-contract.md](docs/api-contract.md).
 
 ## Testing
 
 - Backend: JUnit, Mockito, Spring Boot integration tests
 - Frontend: Angular unit tests (added with the app scaffold)
-- Priority engine and ownership rules are high-priority test targets
+- Ownership rules and planning CRUD are high-priority test targets
 
 ## Docker
 
 Run the full local stack (PostgreSQL, Spring Boot API, Angular SPA via nginx) with Docker Compose.
 
-1. Copy `.env.example` to `.env` and fill in secrets (`JWT_SECRET`, optional Google/Canvas values).
+1. Copy `.env.example` to `.env` and fill in secrets (`JWT_SECRET`, optional Google OAuth values).
 2. From the repo root:
 
 ```bash
@@ -161,7 +153,7 @@ GitHub Actions builds and tests the backend (`./mvnw -B test`) and frontend (`np
 
 ## Analytics (Power BI)
 
-Power BI connects to PostgreSQL for completion rates, workload by course, estimated vs actual hours, and trends. Angular remains the interactive app UI.
+Power BI connects to PostgreSQL for completion rates, workload trends, and estimated vs actual time. Angular remains the interactive app UI.
 
 ## Roadmap
 
