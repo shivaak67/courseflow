@@ -17,8 +17,10 @@ import {
   CreateScheduleBlockRequest,
   CreateStudySessionRequest,
   CreateTaskRequest,
+  CreateTimeEntryRequest,
   DashboardSummary,
   GoalDto,
+  InsightsSummary,
   NotificationDto,
   NotificationSettingsDto,
   PrioritizedAssignment,
@@ -29,6 +31,7 @@ import {
   ScheduleBlockDto,
   StudySessionDto,
   TaskDto,
+  TimeEntryDto,
   UpdateCalendarEventRequest,
   UpdateCategoryRequest,
   UpdateGoalRequest,
@@ -38,6 +41,7 @@ import {
   UpdateRoutineRequest,
   UpdateScheduleBlockRequest,
   UpdateTaskRequest,
+  UpdateTimeEntryRequest,
 } from './api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -254,5 +258,33 @@ export class ApiService {
       `${this.base}/api/notification-settings`,
       body,
     );
+  }
+
+  // --- Time entries ---
+
+  listTimeEntries(taskId?: string): Observable<TimeEntryDto[]> {
+    return this.http.get<TimeEntryDto[]>(`${this.base}/api/time-entries`, {
+      params: taskId ? { taskId } : {},
+    });
+  }
+
+  createTimeEntry(body: CreateTimeEntryRequest): Observable<TimeEntryDto> {
+    return this.http.post<TimeEntryDto>(`${this.base}/api/time-entries`, body);
+  }
+
+  updateTimeEntry(id: string, body: UpdateTimeEntryRequest): Observable<TimeEntryDto> {
+    return this.http.put<TimeEntryDto>(`${this.base}/api/time-entries/${id}`, body);
+  }
+
+  deleteTimeEntry(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/time-entries/${id}`);
+  }
+
+  // --- Insights ---
+
+  getInsightsSummary(from: string, to: string): Observable<InsightsSummary> {
+    return this.http.get<InsightsSummary>(`${this.base}/api/insights/summary`, {
+      params: { from, to },
+    });
   }
 }

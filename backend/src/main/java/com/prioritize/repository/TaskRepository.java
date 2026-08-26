@@ -1,5 +1,7 @@
 package com.prioritize.repository;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,4 +30,20 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             @Param("projectId") UUID projectId,
             @Param("status") TaskStatus status,
             @Param("categoryId") UUID categoryId);
+
+    long countByUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            UUID userId, Instant from, Instant to);
+
+    long countByUserIdAndCompletedAtGreaterThanEqualAndCompletedAtLessThan(
+            UUID userId, Instant from, Instant to);
+
+    long countByUserIdAndStatusIn(UUID userId, Collection<TaskStatus> statuses);
+
+    @Query("""
+            SELECT COALESCE(SUM(COALESCE(t.estimatedMinutes, 0)), 0)
+            FROM Task t
+            WHERE t.userId = :userId AND t.status IN :statuses
+            """)
+    long sumEstimatedMinutesByUserIdAndStatusIn(
+            @Param("userId") UUID userId, @Param("statuses") Collection<TaskStatus> statuses);
 }

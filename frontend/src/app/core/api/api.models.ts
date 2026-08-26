@@ -401,3 +401,56 @@ export interface UpdateNotificationSettingsRequest {
   emailEnabled: boolean;
   defaultReminderOffsetsMinutes?: string | null;
 }
+
+/** Time entries & insights */
+
+export interface TimeEntryDto {
+  id: string;
+  taskId: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationMinutes: number;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTimeEntryRequest {
+  taskId: string;
+  durationMinutes: number;
+  notes?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+}
+
+export interface UpdateTimeEntryRequest {
+  taskId: string;
+  durationMinutes: number;
+  notes?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+}
+
+export interface MinutesByDay {
+  date: string;
+  minutes: number;
+}
+
+export interface TopTaskByMinutes {
+  taskId: string;
+  title: string;
+  minutes: number;
+}
+
+export interface InsightsSummary {
+  from: string;
+  to: string;
+  tasksCreated: number;
+  tasksCompleted: number;
+  openTasks: number;
+  totalMinutesLogged: number;
+  estimatedMinutesOpen: number;
+  completionRate: number;
+  minutesByDay: MinutesByDay[];
+  topTasksByMinutes: TopTaskByMinutes[];
+}

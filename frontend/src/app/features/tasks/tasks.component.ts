@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,8 +18,11 @@ export class TasksComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly logging = signal(false);
   readonly error = signal<string | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
+
+  readonly openTasks = computed(() => this.tasks().filter((t) => this.isOpen(t)));
 
   readonly priorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
   readonly statuses: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
@@ -28,6 +31,11 @@ export class TasksComponent implements OnInit {
     title: ['', [Validators.required, Validators.maxLength(255)]],
     priority: ['MEDIUM' as TaskPriority, Validators.required],
     status: ['TODO' as TaskStatus, Validators.required],
+  });
+
+  readonly logForm = this.fb.nonNullable.group({
+    taskId: ['', Validators.required],
+    durationMinutes: [30, [Validators.required, Validators.min(1)]],
   });
 
   ngOnInit(): void {
@@ -74,6 +82,28 @@ export class TasksComponent implements OnInit {
               : 'Could not create task.',
         );
         this.saving.set(false);
+      },
+    });
+  }
+
+  logTime(): void {
+    if (this.logForm.invalid) {
+      this.logForm.markAllAsTouched();
+      return;
+    }
+
+    this.logging.set(true);
+    this.error.set(null);
+    const { taskId, durationMinutes } = this.logForm.getRawValue();
+    this.api.createTimeEntry({ taskId, durationMinutes }).subscribe({
+      next: () => {
+        this.logForm.patchValue({ durationMinutes: 30 });
+        this.logging.set(false);
+        this.reload();
+      },
+      error: () => {
+        this.error.set('Could not log time.');
+        this.logging.set(false);
       },
     });
   }

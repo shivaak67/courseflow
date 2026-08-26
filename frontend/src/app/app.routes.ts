@@ -81,6 +81,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'insights',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/insights/insights.component').then(
+            (m) => m.InsightsComponent,
+          ),
+      },
+      {
         path: 'settings',
         canActivate: [authGuard],
         loadComponent: () =>

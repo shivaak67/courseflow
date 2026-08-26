@@ -31,6 +31,7 @@ export class ShellComponent {
     { label: 'Goals', path: '/goals', icon: 'flag' },
     { label: 'Projects', path: '/projects', icon: 'folder_open' },
     { label: 'Calendar', path: '/calendar', icon: 'calendar_month' },
+    { label: 'Insights', path: '/insights', icon: 'insights' },
     { label: 'Settings', path: '/settings', icon: 'settings' },
   ];
 

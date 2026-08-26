@@ -21,6 +21,22 @@
   margin-bottom: 1.1rem;
 }
 
+.log-form {
+  display: grid;
+  grid-template-columns: 1.6fr 0.7fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.1rem;
+}
+
+.log-form button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
 .crud__field {
   display: grid;
   gap: 0.35rem;
@@ -162,13 +178,19 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .crud__form button {
+  .crud__form button,
+  .log-form button {
     grid-column: 1 / -1;
+  }
+
+  .log-form {
+    grid-template-columns: 1fr 0.5fr;
   }
 }
 
 @media (max-width: 560px) {
-  .crud__form {
+  .crud__form,
+  .log-form {
     grid-template-columns: 1fr;
   }
 

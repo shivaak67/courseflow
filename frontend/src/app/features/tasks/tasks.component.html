@@ -40,6 +40,26 @@
     </button>
   </form>
 
+  <form class="log-form prio-panel" [formGroup]="logForm" (ngSubmit)="logTime()">
+    <label class="crud__field">
+      <span>Task</span>
+      <select formControlName="taskId">
+        <option value="" disabled>Select open task</option>
+        @for (task of openTasks(); track task.id) {
+          <option [value]="task.id">{{ task.title }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field">
+      <span>Minutes</span>
+      <input type="number" formControlName="durationMinutes" min="1" step="1" />
+    </label>
+    <button mat-stroked-button type="submit" [disabled]="logging() || openTasks().length === 0">
+      <mat-icon>timer</mat-icon>
+      {{ logging() ? 'Logging…' : 'Log time' }}
+    </button>
+  </form>
+
   @if (loading()) {
     <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading tasks…</p>
   } @else if (tasks().length === 0) {
@@ -57,6 +77,7 @@
             <p>
               <span class="queue__level" [attr.data-level]="task.priority">{{ task.priority }}</span>
               · {{ task.status }}
+              · {{ task.actualMinutes }} min logged
               @if (task.dueDate) {
                 · due {{ task.dueDate }}
               }

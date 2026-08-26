@@ -1,0 +1,102 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">History</p>
+      <h1 class="prio-title">Insights</h1>
+      <p class="prio-lede">
+        A read-only look at time logged and task progress over the last 7 days.
+      </p>
+    </div>
+    <div class="page__actions">
+      <span class="window-note">Last 7 days</span>
+      <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Reload
+      </button>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="insights__banner" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="insights__note"><mat-icon>hourglass_top</mat-icon> Loading insights…</p>
+  } @else if (summary(); as data) {
+    <div class="insights__metrics">
+      <article class="metric">
+        <p class="metric__label">Minutes logged</p>
+        <p class="metric__value">{{ data.totalMinutesLogged }}</p>
+        <p class="metric__hint">Time recorded in this window</p>
+      </article>
+      <article class="metric">
+        <p class="metric__label">Tasks created</p>
+        <p class="metric__value">{{ data.tasksCreated }}</p>
+        <p class="metric__hint">New tasks in this window</p>
+      </article>
+      <article class="metric">
+        <p class="metric__label">Tasks completed</p>
+        <p class="metric__value">{{ data.tasksCompleted }}</p>
+        <p class="metric__hint">Finished in this window</p>
+      </article>
+      <article class="metric">
+        <p class="metric__label">Open tasks</p>
+        <p class="metric__value">{{ data.openTasks }}</p>
+        <p class="metric__hint">Still todo or in progress</p>
+      </article>
+      <article class="metric">
+        <p class="metric__label">Completion rate</p>
+        <p class="metric__value">{{ completionRatePercent(data.completionRate) }}</p>
+        <p class="metric__hint">Completed vs created</p>
+      </article>
+    </div>
+
+    <div class="insights__columns">
+      <article class="surface">
+        <div class="surface__head">
+          <h2>Top tasks by minutes</h2>
+          <span>Most time logged</span>
+        </div>
+        @if (data.topTasksByMinutes.length === 0) {
+          <div class="prio-empty">
+            <div class="prio-empty__mark"><mat-icon>timer</mat-icon></div>
+            <h3>No time logged yet</h3>
+            <p>Log minutes from the Tasks page to see top tasks here.</p>
+          </div>
+        } @else {
+          <ul class="breakdown">
+            @for (item of data.topTasksByMinutes; track item.taskId) {
+              <li>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.minutes }} min</span>
+              </li>
+            }
+          </ul>
+        }
+      </article>
+
+      <article class="surface">
+        <div class="surface__head">
+          <h2>Day breakdown</h2>
+          <span>Minutes by day</span>
+        </div>
+        @if (data.minutesByDay.length === 0) {
+          <div class="prio-empty">
+            <div class="prio-empty__mark"><mat-icon>calendar_view_week</mat-icon></div>
+            <h3>No daily totals</h3>
+            <p>Days with logged time will appear in this list.</p>
+          </div>
+        } @else {
+          <ul class="breakdown">
+            @for (day of data.minutesByDay; track day.date) {
+              <li>
+                <strong>{{ formatDay(day.date) }}</strong>
+                <span>{{ day.minutes }} min</span>
+              </li>
+            }
+          </ul>
+        }
+      </article>
+    </div>
+  }
+</section>
