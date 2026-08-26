@@ -3,14 +3,17 @@ package com.prioritize.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.prioritize.dto.ReminderRequest;
 import com.prioritize.dto.ReminderResponse;
 import com.prioritize.dto.ReminderUpdateRequest;
+import com.prioritize.exception.ApiException;
 import com.prioritize.exception.ResourceNotFoundException;
 import com.prioritize.mapper.ReminderMapper;
+import com.prioritize.model.NotificationChannel;
 import com.prioritize.model.Reminder;
 import com.prioritize.model.ReminderEntityType;
 import com.prioritize.model.ReminderStatus;
@@ -64,6 +67,7 @@ public class ReminderService {
     }
 
     public ReminderResponse create(UUID userId, ReminderRequest request) {
+        validateChannelSupported(request.channel());
         validateRelatedEntityOwned(userId, request.relatedEntityType(), request.relatedEntityId());
         Reminder reminder = new Reminder();
         reminder.setUserId(userId);
@@ -79,6 +83,7 @@ public class ReminderService {
         if (request.reminderAt() == null && request.channel() == null) {
             throw new IllegalArgumentException("At least one of reminderAt or channel is required");
         }
+        validateChannelSupported(request.channel());
         reminderMapper.applyUpdate(reminder, request);
         return reminderMapper.toResponse(reminderRepository.save(reminder));
     }
@@ -115,5 +120,12 @@ public class ReminderService {
         if (!owned) {
             throw new ResourceNotFoundException(type.name() + " not found");
         }
+    }
+
+    private static void validateChannelSupported(NotificationChannel channel) {
+        if (channel == null || channel == NotificationChannel.IN_APP) {
+            return;
+        }
+        throw new ApiException(HttpStatus.BAD_REQUEST, channel.name() + " reminders are not supported");
     }
 }

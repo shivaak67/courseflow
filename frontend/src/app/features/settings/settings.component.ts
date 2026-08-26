@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
-import { NotificationChannel, ReminderDto, TaskDto, UserProfileDto } from '../../core/api/api.models';
+import { ReminderDto, TaskDto } from '../../core/api/api.models';
 
 @Component({
   selector: 'app-settings',
@@ -18,17 +18,11 @@ export class SettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly loading = signal(true);
-  readonly savingProfile = signal(false);
   readonly savingSettings = signal(false);
   readonly savingReminder = signal(false);
-  readonly sendingCode = signal(false);
-  readonly verifyingPhone = signal(false);
   readonly error = signal<string | null>(null);
-  readonly profileSaved = signal(false);
   readonly settingsSaved = signal(false);
-  readonly codeSent = signal(false);
 
-  readonly profile = signal<UserProfileDto | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
   readonly reminders = signal<ReminderDto[]>([]);
 
@@ -42,30 +36,14 @@ export class SettingsComponent implements OnInit {
       .sort((a, b) => new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime()),
   );
 
-  readonly phoneNeedsVerification = computed(() => {
-    const p = this.profile();
-    return !!p?.phoneNumber && !p.phoneVerified;
-  });
-
-  readonly profileForm = this.fb.nonNullable.group({
-    timezone: [''],
-    phoneNumber: [''],
-  });
-
-  readonly verifyForm = this.fb.nonNullable.group({
-    code: ['', [Validators.required, Validators.minLength(4)]],
-  });
-
   readonly settingsForm = this.fb.nonNullable.group({
     inAppEnabled: [true],
-    smsEnabled: [false],
     emailEnabled: [false],
   });
 
   readonly reminderForm = this.fb.nonNullable.group({
     taskId: ['', Validators.required],
     reminderLocal: ['', Validators.required],
-    channel: ['IN_APP' as NotificationChannel, Validators.required],
   });
 
   ngOnInit(): void {
@@ -75,20 +53,15 @@ export class SettingsComponent implements OnInit {
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.profileSaved.set(false);
     this.settingsSaved.set(false);
-    this.codeSent.set(false);
     forkJoin({
-      profile: this.api.getMe(),
       settings: this.api.getNotificationSettings(),
       reminders: this.api.listReminders(),
       tasks: this.api.listTasks(),
     }).subscribe({
-      next: ({ profile, settings, reminders, tasks }) => {
-        this.applyProfile(profile);
+      next: ({ settings, reminders, tasks }) => {
         this.settingsForm.patchValue({
           inAppEnabled: settings.inAppEnabled,
-          smsEnabled: settings.smsEnabled,
           emailEnabled: settings.emailEnabled,
         });
         this.reminders.set(reminders);
@@ -102,74 +75,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  saveProfile(): void {
-    this.savingProfile.set(true);
-    this.error.set(null);
-    this.profileSaved.set(false);
-    this.codeSent.set(false);
-
-    const value = this.profileForm.getRawValue();
-    const phoneNumber = value.phoneNumber.trim();
-    this.api
-      .updateMe({
-        timezone: value.timezone.trim() || null,
-        phoneNumber: phoneNumber || '',
-      })
-      .subscribe({
-        next: (profile) => {
-          this.applyProfile(profile);
-          this.savingProfile.set(false);
-          this.profileSaved.set(true);
-        },
-        error: () => {
-          this.error.set('Could not save profile. Use E.164 format for phone (e.g. +15551234567).');
-          this.savingProfile.set(false);
-        },
-      });
-  }
-
-  sendVerificationCode(): void {
-    this.sendingCode.set(true);
-    this.error.set(null);
-    this.codeSent.set(false);
-    this.api.requestPhoneVerification().subscribe({
-      next: () => {
-        this.sendingCode.set(false);
-        this.codeSent.set(true);
-      },
-      error: () => {
-        this.error.set('Could not send verification code. Check that SMS is configured on the server.');
-        this.sendingCode.set(false);
-      },
-    });
-  }
-
-  verifyPhone(): void {
-    if (this.verifyForm.invalid) {
-      this.verifyForm.markAllAsTouched();
-      return;
-    }
-
-    const { code } = this.verifyForm.getRawValue();
-    this.verifyingPhone.set(true);
-    this.error.set(null);
-    this.api.verifyPhone(code.trim()).subscribe({
-      next: () => {
-        this.verifyingPhone.set(false);
-        this.verifyForm.reset({ code: '' });
-        this.codeSent.set(false);
-        this.api.getMe().subscribe({
-          next: (profile) => this.applyProfile(profile),
-          error: () => this.error.set('Phone verified, but could not refresh profile.'),
-        });
-      },
-      error: () => {
-        this.error.set('Could not verify phone. Check the code and try again.');
-        this.verifyingPhone.set(false);
-      },
-    });
-  }
-
   saveSettings(): void {
     this.savingSettings.set(true);
     this.error.set(null);
@@ -178,14 +83,13 @@ export class SettingsComponent implements OnInit {
     this.api
       .updateNotificationSettings({
         inAppEnabled: value.inAppEnabled,
-        smsEnabled: value.smsEnabled,
+        smsEnabled: false,
         emailEnabled: value.emailEnabled,
       })
       .subscribe({
         next: (settings) => {
           this.settingsForm.patchValue({
             inAppEnabled: settings.inAppEnabled,
-            smsEnabled: settings.smsEnabled,
             emailEnabled: settings.emailEnabled,
           });
           this.savingSettings.set(false);
@@ -204,7 +108,7 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
-    const { taskId, reminderLocal, channel } = this.reminderForm.getRawValue();
+    const { taskId, reminderLocal } = this.reminderForm.getRawValue();
     const reminderAt = localInputToIso(reminderLocal);
     if (!reminderAt) {
       this.error.set('Enter a valid reminder date and time.');
@@ -218,12 +122,12 @@ export class SettingsComponent implements OnInit {
         relatedEntityType: 'TASK',
         relatedEntityId: taskId,
         reminderAt,
-        channel,
+        channel: 'IN_APP',
       })
       .subscribe({
         next: (created) => {
           this.reminders.update((list) => [created, ...list]);
-          this.reminderForm.reset({ taskId: '', reminderLocal: '', channel: 'IN_APP' });
+          this.reminderForm.reset({ taskId: '', reminderLocal: '' });
           this.savingReminder.set(false);
         },
         error: () => {
@@ -266,14 +170,6 @@ export class SettingsComponent implements OnInit {
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-    });
-  }
-
-  private applyProfile(profile: UserProfileDto): void {
-    this.profile.set(profile);
-    this.profileForm.patchValue({
-      timezone: profile.timezone ?? '',
-      phoneNumber: profile.phoneNumber ?? '',
     });
   }
 }

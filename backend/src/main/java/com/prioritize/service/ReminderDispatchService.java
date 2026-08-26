@@ -18,12 +18,9 @@ import com.prioritize.model.NotificationChannel;
 import com.prioritize.model.NotificationSettings;
 import com.prioritize.model.Reminder;
 import com.prioritize.model.ReminderStatus;
-import com.prioritize.model.User;
 import com.prioritize.repository.AppNotificationRepository;
 import com.prioritize.repository.NotificationSettingsRepository;
 import com.prioritize.repository.ReminderRepository;
-import com.prioritize.repository.UserRepository;
-import com.prioritize.sms.SmsSender;
 
 @Service
 public class ReminderDispatchService {
@@ -34,8 +31,6 @@ public class ReminderDispatchService {
     private final ReminderRepository reminderRepository;
     private final AppNotificationRepository appNotificationRepository;
     private final NotificationSettingsRepository notificationSettingsRepository;
-    private final UserRepository userRepository;
-    private final SmsSender smsSender;
     private final Clock clock;
     private final TransactionTemplate transactionTemplate;
 
@@ -43,15 +38,11 @@ public class ReminderDispatchService {
             ReminderRepository reminderRepository,
             AppNotificationRepository appNotificationRepository,
             NotificationSettingsRepository notificationSettingsRepository,
-            UserRepository userRepository,
-            SmsSender smsSender,
             Clock clock,
             PlatformTransactionManager transactionManager) {
         this.reminderRepository = reminderRepository;
         this.appNotificationRepository = appNotificationRepository;
         this.notificationSettingsRepository = notificationSettingsRepository;
-        this.userRepository = userRepository;
-        this.smsSender = smsSender;
         this.clock = clock;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
@@ -83,7 +74,7 @@ public class ReminderDispatchService {
         }
 
         try {
-            deliver(reminder, now);
+            deliver(reminder);
             reminder.setStatus(ReminderStatus.SENT);
             reminder.setSentAt(now);
             reminder.setFailureReason(null);
@@ -99,14 +90,10 @@ public class ReminderDispatchService {
         reminderRepository.save(reminder);
     }
 
-    private void deliver(Reminder reminder, Instant now) {
+    private void deliver(Reminder reminder) {
         NotificationChannel channel = reminder.getChannel();
-        if (channel == NotificationChannel.SMS) {
-            deliverSms(reminder);
-            return;
-        }
-        if (channel == NotificationChannel.EMAIL) {
-            throw new DeliveryException("EMAIL not configured");
+        if (channel == NotificationChannel.SMS || channel == NotificationChannel.EMAIL) {
+            throw new DeliveryException(channel.name() + " not supported");
         }
         if (channel != NotificationChannel.IN_APP) {
             throw new DeliveryException("Unsupported channel");
@@ -127,30 +114,6 @@ public class ReminderDispatchService {
         notification.setRelatedEntityType(reminder.getRelatedEntityType().name());
         notification.setRelatedEntityId(reminder.getRelatedEntityId());
         appNotificationRepository.save(notification);
-    }
-
-    private void deliverSms(Reminder reminder) {
-        boolean smsEnabled = notificationSettingsRepository.findById(reminder.getUserId())
-                .map(NotificationSettings::isSmsEnabled)
-                .orElse(false);
-        if (!smsEnabled) {
-            throw new DeliveryException("SMS disabled");
-        }
-
-        User user = userRepository.findById(reminder.getUserId())
-                .orElseThrow(() -> new DeliveryException("phone number missing"));
-        String phone = user.getPhoneNumber();
-        if (phone == null || phone.isBlank()) {
-            throw new DeliveryException("phone number missing");
-        }
-        if (!user.isPhoneVerified()) {
-            throw new DeliveryException("phone not verified");
-        }
-        if (!smsSender.isConfigured()) {
-            throw new DeliveryException("SMS not configured");
-        }
-
-        smsSender.send(phone, "Prioritize reminder: " + reminder.getRelatedEntityType().name());
     }
 
     private static String trimReason(String message) {

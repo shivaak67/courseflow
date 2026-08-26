@@ -242,23 +242,6 @@ export interface RoutineOccurrenceDto {
   recurrenceType: RecurrenceType;
 }
 
-/** User profile */
-
-export interface UserProfileDto {
-  id: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  timezone: string | null;
-  phoneNumber: string | null;
-  phoneVerified: boolean;
-}
-
-export interface UpdateUserProfileRequest {
-  timezone?: string | null;
-  phoneNumber?: string | null;
-}
-
 /** Reminders & notifications */
 
 export type ReminderEntityType =
@@ -268,7 +251,7 @@ export type ReminderEntityType =
   | 'CALENDAR_EVENT'
   | 'GOAL';
 
-export type NotificationChannel = 'IN_APP' | 'SMS' | 'EMAIL';
+export type NotificationChannel = 'IN_APP' | 'EMAIL';
 
 export type ReminderStatus =
   | 'PENDING'

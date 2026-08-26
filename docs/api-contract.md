@@ -85,9 +85,9 @@ Standard CRUD unless noted. All scoped to the authenticated user; missing/not-ow
 | Schedule blocks | `/api/schedule-blocks` | Links a `taskId` to `startAt`/`endAt`; optional date-range query on list |
 | Calendar events | `/api/calendar-events` | Personal events (not tasks); optional date-range query on list |
 | Routines | `/api/routines` | Recurrence: `DAILY\|WEEKLY\|SELECTED_WEEKDAYS\|MONTHLY`; `GET /occurrences?from=&to=` |
-| Reminders | `/api/reminders` | Entity types: `TASK\|SCHEDULE_BLOCK\|ROUTINE\|CALENDAR_EVENT\|GOAL`; channels: `IN_APP\|SMS\|EMAIL`; `POST /{id}/cancel` |
+| Reminders | `/api/reminders` | Entity types: `TASK\|SCHEDULE_BLOCK\|ROUTINE\|CALENDAR_EVENT\|GOAL`; channel: `IN_APP` only; `POST /{id}/cancel` |
 | Notifications | `/api/notifications` | In-app inbox; `POST /{id}/read`, `DELETE /{id}` |
-| Notification settings | `/api/notification-settings` | `GET` / `PUT` (sms / in-app / email flags; SMS delivery not fully wired yet) |
+| Notification settings | `/api/notification-settings` | `GET` / `PUT` (in-app / email flags) |
 | Time entries | `/api/time-entries` | Logged work against a `taskId` |
 | Insights | `/api/insights/summary` | Query: `from`, `to` — completion and minutes aggregates |
 

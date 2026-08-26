@@ -12,7 +12,7 @@ Prioritize helps you plan and execute work with a clear hierarchy: categories an
 - Categories, goals, projects, and tasks (manual priority)
 - Schedule blocks (time-blocking) and personal calendar events
 - Recurring routines and occurrences
-- Reminders and in-app notifications (SMS/email channels planned; not fully wired yet)
+- Reminders and in-app notifications
 - Time entries and insights summary
 - Dashboard overview
 - Power BI–ready PostgreSQL schema

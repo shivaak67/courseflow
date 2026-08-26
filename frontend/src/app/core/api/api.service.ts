@@ -35,8 +35,6 @@ import {
   UpdateScheduleBlockRequest,
   UpdateTaskRequest,
   UpdateTimeEntryRequest,
-  UpdateUserProfileRequest,
-  UserProfileDto,
 } from './api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -210,24 +208,6 @@ export class ApiService {
 
   markNotificationRead(id: string): Observable<NotificationDto> {
     return this.http.post<NotificationDto>(`${this.base}/api/notifications/${id}/read`, {});
-  }
-
-  // --- User profile ---
-
-  getMe(): Observable<UserProfileDto> {
-    return this.http.get<UserProfileDto>(`${this.base}/api/me`);
-  }
-
-  updateMe(body: UpdateUserProfileRequest): Observable<UserProfileDto> {
-    return this.http.put<UserProfileDto>(`${this.base}/api/me`, body);
-  }
-
-  requestPhoneVerification(): Observable<void> {
-    return this.http.post<void>(`${this.base}/api/me/phone/request-verification`, {});
-  }
-
-  verifyPhone(code: string): Observable<void> {
-    return this.http.post<void>(`${this.base}/api/me/phone/verify`, { code });
   }
 
   // --- Notification settings ---
