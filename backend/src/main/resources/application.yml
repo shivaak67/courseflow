@@ -37,3 +37,9 @@ app:
     success-redirect: ${APP_OAUTH_SUCCESS_REDIRECT:http://localhost:4200/auth/callback}
     google:
       enabled: ${GOOGLE_OAUTH_ENABLED:false}
+  twilio:
+    enabled: ${TWILIO_ENABLED:false}
+    mock: ${TWILIO_MOCK:true}
+    account-sid: ${TWILIO_ACCOUNT_SID:}
+    auth-token: ${TWILIO_AUTH_TOKEN:}
+    from-number: ${TWILIO_FROM_NUMBER:}

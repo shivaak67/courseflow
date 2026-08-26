@@ -4,7 +4,7 @@
       <p class="prio-kicker">Preferences</p>
       <h1 class="prio-title">Settings</h1>
       <p class="prio-lede">
-        Choose how Prioritize reaches you, and set in-app reminders for open tasks.
+        Manage your profile, notification channels, and reminders for open tasks.
       </p>
     </div>
   </header>
@@ -16,6 +16,100 @@
   @if (loading()) {
     <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading settings…</p>
   } @else {
+    <section class="settings__block prio-panel">
+      <h2 class="settings__heading">Profile</h2>
+      <p class="settings__lede">
+        Update timezone and phone. Phone numbers use E.164 format (e.g. +15551234567).
+      </p>
+
+      <form class="settings__profile-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+        <label class="crud__field">
+          <span>Email</span>
+          <input type="email" [value]="profile()?.email ?? ''" readonly />
+        </label>
+        <label class="crud__field">
+          <span>Timezone</span>
+          <input
+            type="text"
+            formControlName="timezone"
+            placeholder="America/Chicago"
+            autocomplete="off"
+          />
+        </label>
+        <label class="crud__field">
+          <span>Phone number</span>
+          <input
+            type="tel"
+            formControlName="phoneNumber"
+            placeholder="+15551234567"
+            autocomplete="tel"
+          />
+        </label>
+
+        <div class="settings__phone-meta">
+          @if (profile()?.phoneVerified) {
+            <span class="settings__badge settings__badge--ok">
+              <mat-icon>verified</mat-icon>
+              Verified
+            </span>
+          } @else {
+            <span class="settings__badge">
+              <mat-icon>phonelink_erase</mat-icon>
+              Not verified
+            </span>
+          }
+        </div>
+
+        <div class="settings__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="savingProfile()">
+            <mat-icon>save</mat-icon>
+            {{ savingProfile() ? 'Saving…' : 'Save profile' }}
+          </button>
+          @if (profileSaved()) {
+            <span class="settings__saved"><mat-icon>check_circle</mat-icon> Saved</span>
+          }
+        </div>
+      </form>
+
+      @if (phoneNeedsVerification()) {
+        <div class="settings__verify">
+          <p class="settings__verify-lede">
+            Verify this number to enable SMS reminders. A short code will be texted to you.
+          </p>
+          <div class="settings__verify-row">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="sendVerificationCode()"
+              [disabled]="sendingCode()"
+            >
+              <mat-icon>sms</mat-icon>
+              {{ sendingCode() ? 'Sending…' : 'Send code' }}
+            </button>
+            @if (codeSent()) {
+              <span class="settings__saved"><mat-icon>check_circle</mat-icon> Code sent</span>
+            }
+          </div>
+          <form class="settings__verify-form" [formGroup]="verifyForm" (ngSubmit)="verifyPhone()">
+            <label class="crud__field">
+              <span>Verification code</span>
+              <input
+                type="text"
+                formControlName="code"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="Enter code"
+              />
+            </label>
+            <button mat-flat-button color="primary" type="submit" [disabled]="verifyingPhone()">
+              <mat-icon>check</mat-icon>
+              {{ verifyingPhone() ? 'Verifying…' : 'Verify' }}
+            </button>
+          </form>
+        </div>
+      }
+    </section>
+
     <section class="settings__block prio-panel">
       <h2 class="settings__heading">Notification channels</h2>
       <p class="settings__lede">Toggle which channels can deliver reminders and alerts.</p>
@@ -32,7 +126,7 @@
           <input type="checkbox" formControlName="smsEnabled" />
           <span>
             <strong>SMS</strong>
-            <small>SMS delivery coming soon</small>
+            <small>Requires a verified phone number and Twilio configured on the server</small>
           </span>
         </label>
         <label class="settings__toggle">
@@ -56,9 +150,9 @@
 
     <section class="settings__block prio-panel">
       <h2 class="settings__heading">Upcoming reminders</h2>
-      <p class="settings__lede">Create an in-app reminder for a selected task.</p>
+      <p class="settings__lede">Create a reminder for a selected task. Choose in-app or SMS.</p>
 
-      <form class="crud__form" [formGroup]="reminderForm" (ngSubmit)="createReminder()">
+      <form class="crud__form crud__form--reminder" [formGroup]="reminderForm" (ngSubmit)="createReminder()">
         <label class="crud__field">
           <span>Task</span>
           <select formControlName="taskId">
@@ -71,6 +165,13 @@
         <label class="crud__field">
           <span>When</span>
           <input type="datetime-local" formControlName="reminderLocal" />
+        </label>
+        <label class="crud__field">
+          <span>Channel</span>
+          <select formControlName="channel">
+            <option value="IN_APP">IN_APP</option>
+            <option value="SMS">SMS</option>
+          </select>
         </label>
         <button
           mat-flat-button
@@ -87,7 +188,7 @@
         <div class="prio-empty">
           <div class="prio-empty__mark"><mat-icon>notifications_none</mat-icon></div>
           <h3>No pending reminders</h3>
-          <p>Pick a task and time above to schedule an in-app nudge.</p>
+          <p>Pick a task, time, and channel above to schedule a nudge.</p>
         </div>
       } @else {
         <ul class="crud__list">

@@ -27,3 +27,9 @@ app:
   oauth:
     google:
       enabled: false
+  twilio:
+    enabled: false
+    mock: true
+    account-sid:
+    auth-token:
+    from-number:

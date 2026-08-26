@@ -51,6 +51,12 @@ public class User {
     @Column(name = "phone_verified", nullable = false)
     private boolean phoneVerified;
 
+    @Column(name = "phone_verification_code", length = 16)
+    private String phoneVerificationCode;
+
+    @Column(name = "phone_verification_expires_at")
+    private Instant phoneVerificationExpiresAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -161,6 +167,22 @@ public class User {
 
     public void setPhoneVerified(boolean phoneVerified) {
         this.phoneVerified = phoneVerified;
+    }
+
+    public String getPhoneVerificationCode() {
+        return phoneVerificationCode;
+    }
+
+    public void setPhoneVerificationCode(String phoneVerificationCode) {
+        this.phoneVerificationCode = phoneVerificationCode;
+    }
+
+    public Instant getPhoneVerificationExpiresAt() {
+        return phoneVerificationExpiresAt;
+    }
+
+    public void setPhoneVerificationExpiresAt(Instant phoneVerificationExpiresAt) {
+        this.phoneVerificationExpiresAt = phoneVerificationExpiresAt;
     }
 
     public Instant getCreatedAt() {
