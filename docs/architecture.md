@@ -10,7 +10,7 @@ Portfolio-quality personal productivity and planning platform. This document is 
 
 Organize work as Goals → Projects → Tasks with optional categories. Students (and anyone planning work) set manual priorities, schedule blocks, calendar events, and routines. Reminders, notifications, time entries, and insights support follow-through. Dual auth (email/password + Google OAuth). Server-side data isolation per user.
 
-**Product stance:** No Canvas LMS integration. No auto-priority / decision engine—manual priority and scheduling only.
+**Product stance:** No Canvas LMS integration. No Google Calendar sync. No auto-priority / decision engine—manual priority and scheduling only.
 
 ## Monorepo layout
 
@@ -23,23 +23,19 @@ Organize work as Goals → Projects → Tasks with optional categories. Students
 
 `config`, `security`, `controller`, `service`, `repository`, `model`, `dto`, `mapper`, `exception`, `util`
 
-*(Legacy `integration/canvas` may still exist in the tree until cleanup; it is not a product feature.)*
-
 ## Frontend areas
 
-`core` (auth, guards, interceptors, services), `shared`, `features` (auth, dashboard, goals, projects, tasks, schedule, calendar, routines, reminders/settings, insights, time tracking), `layout`, `environments`
+`core` (auth, guards, interceptors, services), `shared`, `features` (auth, dashboard, goals, projects, tasks, categories, schedule, calendar, routines, notifications, settings, insights, time tracking), `layout`, `environments`
 
 ## Core entities (planning pivot)
 
-**Target model:**  
+**Model:**  
 User → Category; User → Goal → Project → Task → ScheduleBlock;  
 User → Routine | CalendarEvent | Reminder | Notification | TimeEntry;  
 User → NotificationSettings  
 
-**Legacy academic (may remain in DB until a future migration):** Course, Assignment, StudySession, CanvasConnection.
-
 Ownership: all queries scoped by authenticated `userId`. Cross-user access returns 404.  
-**No Canvas. No auto-priority / decision engine. Manual priority and scheduling only.**
+**No Canvas. No Google Calendar sync. No auto-priority / decision engine. Manual priority and scheduling only.**
 
 ## Auth (chosen)
 

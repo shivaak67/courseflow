@@ -6,7 +6,7 @@ All `/api/**` routes except auth register/login require `Authorization: Bearer <
 
 DTOs only — never expose JPA entities.
 
-**Planning APIs** (categories, goals, projects, tasks, schedule-blocks, calendar-events, routines, reminders, notifications, time-entries, insights) are the product surface. Legacy Canvas / courses / assignments / prioritized / study-sessions endpoints are deprecated and may still exist until cleanup—prefer planning resources.
+**Planning APIs** (categories, goals, projects, tasks, schedule-blocks, calendar-events, routines, reminders, notifications, time-entries, insights) are the product surface. There is no Canvas LMS sync and no Google Calendar integration.
 
 ---
 
@@ -135,20 +135,7 @@ Standard CRUD unless noted. All scoped to the authenticated user; missing/not-ow
 
 ### GET `/api/dashboard/summary`
 
-Legacy academic-shaped summary may still be present during the pivot; prefer `/api/insights/summary` for planning metrics.
-
----
-
-## Deprecated (legacy academic / Canvas)
-
-Do not build new UI against these. They may remain until a cleanup migration removes Controllers and tables (`courses`, `assignments`, `study_sessions`, Canvas connection).
-
-| Endpoint | Status |
-|----------|--------|
-| `/api/courses/**` | Deprecated |
-| `/api/assignments/**` (incl. `/upcoming`, `/overdue`, `/prioritized`) | Deprecated — no decision-engine scoring |
-| `POST /api/canvas/sync` | Deprecated — no Canvas product feature |
-| `/api/study-sessions/**` | Deprecated — use `/api/time-entries` |
+Planning-oriented summary for the home dashboard. Prefer `/api/insights/summary` for time and completion metrics.
 
 ---
 

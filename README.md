@@ -4,7 +4,7 @@ Personal productivity and planning platform. Organize work as Goals → Projects
 
 ## Overview
 
-Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself—there is no Canvas LMS sync and no automatic priority / decision engine. The app covers schedule, calendar, routines, reminders, time tracking, and insights. Power BI can connect separately for historical analytics.
+Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself—there is no Canvas LMS sync, no Google Calendar sync, and no automatic priority / decision engine. The app covers schedule, calendar, routines, reminders, notifications, time tracking, and insights. Power BI can connect separately for historical analytics.
 
 ## Features
 
@@ -105,7 +105,7 @@ Work is organized as **Goals → Projects → Tasks**, with optional categories.
 
 ## API Overview
 
-REST under `/api/*`. Auth: `/api/auth/*` and Google OAuth endpoints. Planning resources supersede the legacy Canvas/courses/assignments contract. See [docs/api-contract.md](docs/api-contract.md).
+REST under `/api/*`. Auth: `/api/auth/*` and Google OAuth endpoints. See [docs/api-contract.md](docs/api-contract.md).
 
 ## Testing
 
