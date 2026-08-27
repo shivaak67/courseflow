@@ -73,6 +73,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'categories',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/categories/categories.component').then(
+            (m) => m.CategoriesComponent,
+          ),
+      },
+      {
         path: 'calendar',
         canActivate: [authGuard],
         loadComponent: () =>
@@ -86,6 +94,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/insights/insights.component').then(
             (m) => m.InsightsComponent,
+          ),
+      },
+      {
+        path: 'notifications',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/notifications/notifications.component').then(
+            (m) => m.NotificationsComponent,
           ),
       },
       {

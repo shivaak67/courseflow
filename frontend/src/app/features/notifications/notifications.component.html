@@ -1,0 +1,86 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Inbox</p>
+      <h1 class="prio-title">Notifications</h1>
+      <p class="prio-lede">
+        @if (loading()) {
+          Loading your alerts…
+        } @else if (unreadCount() === 0) {
+          You’re all caught up — no unread alerts.
+        } @else {
+          {{ unreadCount() }} unread
+          {{ unreadCount() === 1 ? 'alert' : 'alerts' }}.
+        }
+      </p>
+    </div>
+    <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      Reload
+    </button>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <label class="notifications__filter">
+    <input
+      type="checkbox"
+      [checked]="unreadOnly()"
+      (change)="onUnreadOnlyChange($event)"
+    />
+    <span>Unread only</span>
+  </label>
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading notifications…</p>
+  } @else if (notifications().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>notifications_none</mat-icon></div>
+      <h3>{{ unreadOnly() ? 'No unread notifications' : 'No notifications yet' }}</h3>
+      <p>
+        @if (unreadOnly()) {
+          Turn off “Unread only” to see everything, or wait for the next reminder.
+        } @else {
+          Reminders and system alerts will show up here when they arrive.
+        }
+      </p>
+    </div>
+  } @else {
+    <ul class="notifications__list">
+      @for (item of notifications(); track item.id) {
+        <li
+          class="notifications__item"
+          [class.notifications__item--unread]="isUnread(item)"
+          [class.notifications__item--read]="!isUnread(item)"
+        >
+          <div class="notifications__body">
+            <div class="notifications__meta">
+              <strong>{{ item.title }}</strong>
+              @if (isUnread(item)) {
+                <span class="notifications__badge">Unread</span>
+              }
+            </div>
+            @if (item.body) {
+              <p class="notifications__copy">{{ item.body }}</p>
+            }
+            <p class="notifications__time">{{ formatCreatedAt(item.createdAt) }}</p>
+          </div>
+          <div class="notifications__actions">
+            @if (isUnread(item)) {
+              <button mat-stroked-button type="button" (click)="markRead(item)">
+                <mat-icon>mark_email_read</mat-icon>
+                Mark read
+              </button>
+            }
+            <button mat-stroked-button type="button" (click)="delete(item)">
+              <mat-icon>delete</mat-icon>
+              Delete
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

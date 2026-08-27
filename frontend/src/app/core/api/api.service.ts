@@ -202,12 +202,18 @@ export class ApiService {
 
   // --- Notifications ---
 
-  listNotifications(): Observable<NotificationDto[]> {
-    return this.http.get<NotificationDto[]>(`${this.base}/api/notifications`);
+  listNotifications(unreadOnly = false): Observable<NotificationDto[]> {
+    return this.http.get<NotificationDto[]>(`${this.base}/api/notifications`, {
+      params: unreadOnly ? { unreadOnly: 'true' } : {},
+    });
   }
 
   markNotificationRead(id: string): Observable<NotificationDto> {
     return this.http.post<NotificationDto>(`${this.base}/api/notifications/${id}/read`, {});
+  }
+
+  deleteNotification(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/notifications/${id}`);
   }
 
   // --- Notification settings ---

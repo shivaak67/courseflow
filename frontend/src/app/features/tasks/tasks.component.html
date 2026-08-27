@@ -19,6 +19,15 @@
       <input type="text" formControlName="title" placeholder="e.g. Draft project brief" />
     </label>
     <label class="crud__field">
+      <span>Category</span>
+      <select formControlName="categoryId">
+        <option value="">None</option>
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field">
       <span>Priority</span>
       <select formControlName="priority">
         @for (level of priorities; track level) {
@@ -77,6 +86,9 @@
             <p>
               <span class="queue__level" [attr.data-level]="task.priority">{{ task.priority }}</span>
               · {{ task.status }}
+              @if (categoryName(task.categoryId); as cat) {
+                · {{ cat }}
+              }
               · {{ task.actualMinutes }} min logged
               @if (task.dueDate) {
                 · due {{ task.dueDate }}

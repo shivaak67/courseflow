@@ -30,8 +30,10 @@ export class ShellComponent {
     { label: 'Routines', path: '/routines', icon: 'autorenew' },
     { label: 'Goals', path: '/goals', icon: 'flag' },
     { label: 'Projects', path: '/projects', icon: 'folder_open' },
+    { label: 'Categories', path: '/categories', icon: 'label' },
     { label: 'Calendar', path: '/calendar', icon: 'calendar_month' },
     { label: 'Insights', path: '/insights', icon: 'insights' },
+    { label: 'Notifications', path: '/notifications', icon: 'notifications' },
     { label: 'Settings', path: '/settings', icon: 'settings' },
   ];
 

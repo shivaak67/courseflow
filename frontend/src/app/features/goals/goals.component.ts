@@ -2,8 +2,9 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
-import { GoalDto } from '../../core/api/api.models';
+import { CategoryDto, GoalDto } from '../../core/api/api.models';
 
 @Component({
   selector: 'app-goals',
@@ -20,9 +21,11 @@ export class GoalsComponent implements OnInit {
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   readonly goals = signal<GoalDto[]>([]);
+  readonly categories = signal<CategoryDto[]>([]);
 
   readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
+    categoryId: [''],
   });
 
   ngOnInit(): void {
@@ -32,9 +35,13 @@ export class GoalsComponent implements OnInit {
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.listGoals().subscribe({
-      next: (goals) => {
+    forkJoin({
+      goals: this.api.listGoals(),
+      categories: this.api.listCategories(),
+    }).subscribe({
+      next: ({ goals, categories }) => {
         this.goals.set(goals);
+        this.categories.set(categories);
         this.loading.set(false);
       },
       error: () => {
@@ -42,6 +49,13 @@ export class GoalsComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  categoryName(categoryId: string | null): string | null {
+    if (!categoryId) {
+      return null;
+    }
+    return this.categories().find((c) => c.id === categoryId)?.name ?? null;
   }
 
   submit(): void {
@@ -52,16 +66,22 @@ export class GoalsComponent implements OnInit {
 
     this.saving.set(true);
     this.error.set(null);
-    this.api.createGoal({ title: this.form.getRawValue().title }).subscribe({
-      next: (created) => {
-        this.goals.update((list) => [created, ...list]);
-        this.form.reset({ title: '' });
-        this.saving.set(false);
-      },
-      error: () => {
-        this.error.set('Could not create goal.');
-        this.saving.set(false);
-      },
-    });
+    const { title, categoryId } = this.form.getRawValue();
+    this.api
+      .createGoal({
+        title,
+        ...(categoryId ? { categoryId } : {}),
+      })
+      .subscribe({
+        next: (created) => {
+          this.goals.update((list) => [created, ...list]);
+          this.form.reset({ title: '', categoryId: '' });
+          this.saving.set(false);
+        },
+        error: () => {
+          this.error.set('Could not create goal.');
+          this.saving.set(false);
+        },
+      });
   }
 }

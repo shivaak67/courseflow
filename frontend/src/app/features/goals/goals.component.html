@@ -18,6 +18,15 @@
       <span>Title</span>
       <input type="text" formControlName="title" placeholder="e.g. Ship planning MVP" />
     </label>
+    <label class="crud__field">
+      <span>Category</span>
+      <select formControlName="categoryId">
+        <option value="">None</option>
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select>
+    </label>
     <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
       <mat-icon>add</mat-icon>
       {{ saving() ? 'Adding…' : 'Add goal' }}
@@ -38,7 +47,15 @@
         <li class="crud__item">
           <div>
             <strong>{{ goal.title }}</strong>
-            <p>{{ goal.status }}@if (goal.targetDate) { · target {{ goal.targetDate }} }</p>
+            <p>
+              {{ goal.status }}
+              @if (categoryName(goal.categoryId); as cat) {
+                · {{ cat }}
+              }
+              @if (goal.targetDate) {
+                · target {{ goal.targetDate }}
+              }
+            </p>
           </div>
         </li>
       }

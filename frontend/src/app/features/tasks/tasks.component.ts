@@ -2,8 +2,9 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
-import { TaskDto, TaskPriority, TaskStatus } from '../../core/api/api.models';
+import { CategoryDto, TaskDto, TaskPriority, TaskStatus } from '../../core/api/api.models';
 
 @Component({
   selector: 'app-tasks',
@@ -21,6 +22,7 @@ export class TasksComponent implements OnInit {
   readonly logging = signal(false);
   readonly error = signal<string | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
+  readonly categories = signal<CategoryDto[]>([]);
 
   readonly openTasks = computed(() => this.tasks().filter((t) => this.isOpen(t)));
 
@@ -29,6 +31,7 @@ export class TasksComponent implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
+    categoryId: [''],
     priority: ['MEDIUM' as TaskPriority, Validators.required],
     status: ['TODO' as TaskStatus, Validators.required],
   });
@@ -45,9 +48,13 @@ export class TasksComponent implements OnInit {
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.listTasks().subscribe({
-      next: (tasks) => {
+    forkJoin({
+      tasks: this.api.listTasks(),
+      categories: this.api.listCategories(),
+    }).subscribe({
+      next: ({ tasks, categories }) => {
         this.tasks.set(tasks);
+        this.categories.set(categories);
         this.loading.set(false);
       },
       error: () => {
@@ -55,6 +62,13 @@ export class TasksComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  categoryName(categoryId: string | null): string | null {
+    if (!categoryId) {
+      return null;
+    }
+    return this.categories().find((c) => c.id === categoryId)?.name ?? null;
   }
 
   submit(): void {
@@ -65,25 +79,32 @@ export class TasksComponent implements OnInit {
 
     this.saving.set(true);
     this.error.set(null);
-    const value = this.form.getRawValue();
-    this.api.createTask(value).subscribe({
-      next: (created) => {
-        this.tasks.update((list) => [created, ...list]);
-        this.form.reset({ title: '', priority: 'MEDIUM', status: 'TODO' });
-        this.saving.set(false);
-      },
-      error: (err) => {
-        const status = err?.status as number | undefined;
-        this.error.set(
-          status === 404
-            ? 'Tasks API not available — restart the backend with the latest code.'
-            : status === 0
-              ? 'Cannot reach the API. Is the backend running on port 8080?'
-              : 'Could not create task.',
-        );
-        this.saving.set(false);
-      },
-    });
+    const { title, categoryId, priority, status } = this.form.getRawValue();
+    this.api
+      .createTask({
+        title,
+        priority,
+        status,
+        ...(categoryId ? { categoryId } : {}),
+      })
+      .subscribe({
+        next: (created) => {
+          this.tasks.update((list) => [created, ...list]);
+          this.form.reset({ title: '', categoryId: '', priority: 'MEDIUM', status: 'TODO' });
+          this.saving.set(false);
+        },
+        error: (err) => {
+          const statusCode = err?.status as number | undefined;
+          this.error.set(
+            statusCode === 404
+              ? 'Tasks API not available — restart the backend with the latest code.'
+              : statusCode === 0
+                ? 'Cannot reach the API. Is the backend running on port 8080?'
+                : 'Could not create task.',
+          );
+          this.saving.set(false);
+        },
+      });
   }
 
   logTime(): void {

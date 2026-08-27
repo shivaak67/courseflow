@@ -1,0 +1,103 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Labels</p>
+      <h1 class="prio-title">Categories</h1>
+      <p class="prio-lede">
+        Tag goals, projects, and tasks so related work stays easy to find.
+      </p>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="crud__banner" role="alert">{{ message }}</p>
+  }
+
+  <form class="crud__form prio-panel" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="crud__field">
+      <span>Name</span>
+      <input type="text" formControlName="name" placeholder="e.g. School" />
+    </label>
+    <label class="crud__field">
+      <span>Color</span>
+      <div class="crud__color-row">
+        <input
+          type="color"
+          class="crud__color-swatch"
+          [value]="form.controls.color.value || '#0b6e6a'"
+          (input)="form.controls.color.setValue($any($event.target).value)"
+          aria-label="Pick color"
+        />
+        <input type="text" formControlName="color" placeholder="#0b6e6a" />
+      </div>
+    </label>
+    <label class="crud__field">
+      <span>Icon</span>
+      <input type="text" formControlName="icon" placeholder="e.g. school" />
+    </label>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+      <mat-icon>add</mat-icon>
+      {{ saving() ? 'Adding…' : 'Add category' }}
+    </button>
+  </form>
+
+  @if (loading()) {
+    <p class="crud__note"><mat-icon>hourglass_top</mat-icon> Loading categories…</p>
+  } @else if (categories().length === 0) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>label</mat-icon></div>
+      <h3>No categories yet</h3>
+      <p>Add a name above to create your first label.</p>
+    </div>
+  } @else {
+    <ul class="crud__list">
+      @for (category of categories(); track category.id) {
+        <li class="crud__item">
+          @if (renamingId() === category.id) {
+            <form class="crud__rename" [formGroup]="renameForm" (ngSubmit)="saveRename(category)">
+              <input type="text" formControlName="name" aria-label="Rename category" />
+              <button mat-flat-button color="primary" type="submit">Save</button>
+              <button mat-stroked-button type="button" (click)="cancelRename()">Cancel</button>
+            </form>
+          } @else {
+            <div class="crud__item-main">
+              <span
+                class="crud__swatch"
+                [style.background]="category.color || 'var(--prio-teal)'"
+                aria-hidden="true"
+              ></span>
+              <div>
+                <strong>
+                  @if (category.icon) {
+                    <mat-icon class="crud__item-icon">{{ category.icon }}</mat-icon>
+                  }
+                  {{ category.name }}
+                </strong>
+                <p>
+                  @if (category.color) {
+                    {{ category.color }}
+                  } @else {
+                    No color
+                  }
+                  @if (category.icon) {
+                    · {{ category.icon }}
+                  }
+                </p>
+              </div>
+            </div>
+            <div class="crud__item-actions">
+              <button mat-stroked-button type="button" (click)="startRename(category)">
+                <mat-icon>edit</mat-icon>
+                Rename
+              </button>
+              <button mat-stroked-button type="button" (click)="remove(category)">
+                <mat-icon>delete</mat-icon>
+                Remove
+              </button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
