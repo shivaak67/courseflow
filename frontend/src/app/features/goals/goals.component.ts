@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
-import { CategoryDto, GoalDto } from '../../core/api/api.models';
+import { CategoryDto, GoalDto, GoalStatus } from '../../core/api/api.models';
 
 @Component({
   selector: 'app-goals',
@@ -19,13 +19,27 @@ export class GoalsComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly editingId = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly goals = signal<GoalDto[]>([]);
   readonly categories = signal<CategoryDto[]>([]);
 
+  readonly statuses: GoalStatus[] = ['ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED'];
+
   readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
     categoryId: [''],
+    description: [''],
+    targetDate: [''],
+    status: ['ACTIVE' as GoalStatus, Validators.required],
+  });
+
+  readonly editForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(255)]],
+    categoryId: [''],
+    description: [''],
+    targetDate: [''],
+    status: ['ACTIVE' as GoalStatus, Validators.required],
   });
 
   ngOnInit(): void {
@@ -66,22 +80,84 @@ export class GoalsComponent implements OnInit {
 
     this.saving.set(true);
     this.error.set(null);
-    const { title, categoryId } = this.form.getRawValue();
-    this.api
-      .createGoal({
-        title,
-        ...(categoryId ? { categoryId } : {}),
-      })
-      .subscribe({
-        next: (created) => {
-          this.goals.update((list) => [created, ...list]);
-          this.form.reset({ title: '', categoryId: '' });
-          this.saving.set(false);
-        },
-        error: () => {
-          this.error.set('Could not create goal.');
-          this.saving.set(false);
-        },
-      });
+    const payload = this.goalPayload(this.form.getRawValue());
+    this.api.createGoal(payload).subscribe({
+      next: (created) => {
+        this.goals.update((list) => [created, ...list]);
+        this.form.reset({
+          title: '',
+          categoryId: '',
+          description: '',
+          targetDate: '',
+          status: 'ACTIVE',
+        });
+        this.saving.set(false);
+      },
+      error: () => {
+        this.error.set('Could not create goal.');
+        this.saving.set(false);
+      },
+    });
+  }
+
+  startEdit(goal: GoalDto): void {
+    this.editingId.set(goal.id);
+    this.editForm.reset({
+      title: goal.title,
+      categoryId: goal.categoryId ?? '',
+      description: goal.description ?? '',
+      targetDate: goal.targetDate ?? '',
+      status: goal.status,
+    });
+  }
+
+  cancelEdit(): void {
+    this.editingId.set(null);
+  }
+
+  saveEdit(goal: GoalDto): void {
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+
+    this.error.set(null);
+    const payload = this.goalPayload(this.editForm.getRawValue());
+    this.api.updateGoal(goal.id, payload).subscribe({
+      next: (updated) => {
+        this.goals.update((list) => list.map((item) => (item.id === updated.id ? updated : item)));
+        this.editingId.set(null);
+      },
+      error: () => this.error.set('Could not update goal.'),
+    });
+  }
+
+  remove(goal: GoalDto): void {
+    this.error.set(null);
+    this.api.deleteGoal(goal.id).subscribe({
+      next: () => {
+        this.goals.update((list) => list.filter((item) => item.id !== goal.id));
+        if (this.editingId() === goal.id) {
+          this.editingId.set(null);
+        }
+      },
+      error: () => this.error.set('Could not delete goal.'),
+    });
+  }
+
+  private goalPayload(raw: {
+    title: string;
+    categoryId: string;
+    description: string;
+    targetDate: string;
+    status: GoalStatus;
+  }) {
+    return {
+      title: raw.title.trim(),
+      categoryId: raw.categoryId || null,
+      description: raw.description.trim() || null,
+      targetDate: raw.targetDate || null,
+      status: raw.status,
+    };
   }
 }

@@ -4,9 +4,13 @@
       <p class="prio-kicker">Outcomes</p>
       <h1 class="prio-title">Goals</h1>
       <p class="prio-lede">
-        Name the outcomes you are aiming for — projects and tasks can hang off these later.
+        Define outcomes, set target dates, and organize work under each goal with projects and tasks.
       </p>
     </div>
+    <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      Reload
+    </button>
   </header>
 
   @if (error(); as message) {
@@ -27,6 +31,22 @@
         }
       </select>
     </label>
+    <label class="crud__field">
+      <span>Target date</span>
+      <input type="date" formControlName="targetDate" />
+    </label>
+    <label class="crud__field">
+      <span>Status</span>
+      <select formControlName="status">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field crud__field--wide">
+      <span>Description</span>
+      <input type="text" formControlName="description" placeholder="Optional context" />
+    </label>
     <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
       <mat-icon>add</mat-icon>
       {{ saving() ? 'Adding…' : 'Add goal' }}
@@ -45,18 +65,75 @@
     <ul class="crud__list">
       @for (goal of goals(); track goal.id) {
         <li class="crud__item">
-          <div>
-            <strong>{{ goal.title }}</strong>
-            <p>
-              {{ goal.status }}
-              @if (categoryName(goal.categoryId); as cat) {
-                · {{ cat }}
-              }
-              @if (goal.targetDate) {
-                · target {{ goal.targetDate }}
-              }
-            </p>
-          </div>
+          @if (editingId() === goal.id) {
+            <form class="crud__edit" [formGroup]="editForm" (ngSubmit)="saveEdit(goal)">
+              <label class="crud__field">
+                <span>Title</span>
+                <input type="text" formControlName="title" />
+              </label>
+              <label class="crud__field">
+                <span>Category</span>
+                <select formControlName="categoryId">
+                  <option value="">None</option>
+                  @for (category of categories(); track category.id) {
+                    <option [value]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="crud__field">
+                <span>Target date</span>
+                <input type="date" formControlName="targetDate" />
+              </label>
+              <label class="crud__field">
+                <span>Status</span>
+                <select formControlName="status">
+                  @for (status of statuses; track status) {
+                    <option [value]="status">{{ status }}</option>
+                  }
+                </select>
+              </label>
+              <label class="crud__field crud__field--wide">
+                <span>Description</span>
+                <input type="text" formControlName="description" />
+              </label>
+              <div class="crud__edit-actions">
+                <button mat-flat-button color="primary" type="submit">Save</button>
+                <button mat-stroked-button type="button" (click)="cancelEdit()">Cancel</button>
+              </div>
+            </form>
+          } @else {
+            <div class="crud__item-main">
+              <div>
+                <div class="crud__item-head">
+                  <strong>{{ goal.title }}</strong>
+                  <span class="crud__status" [attr.data-status]="goal.status">{{ goal.status }}</span>
+                </div>
+                <p>
+                  @if (categoryName(goal.categoryId); as cat) {
+                    {{ cat }} ·
+                  }
+                  @if (goal.targetDate) {
+                    target {{ goal.targetDate }}
+                  } @else {
+                    no target date
+                  }
+                </p>
+                @if (goal.description) {
+                  <p class="crud__description">{{ goal.description }}</p>
+                }
+              </div>
+            </div>
+            <div class="crud__item-actions">
+              <button mat-stroked-button type="button" (click)="startEdit(goal)">
+                <mat-icon>edit</mat-icon>
+                Edit
+              </button>
+              <button mat-stroked-button type="button" (click)="remove(goal)">
+                <mat-icon>delete</mat-icon>
+                Remove
+              </button>
+            </div>
+          }
         </li>
       }
     </ul>

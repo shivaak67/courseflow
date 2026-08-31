@@ -4,9 +4,13 @@
       <p class="prio-kicker">Containers</p>
       <h1 class="prio-title">Projects</h1>
       <p class="prio-lede">
-        Group related work under a project — link goals and categories as the model grows.
+        Group related work under a project — link goals, categories, and dates to keep planning clear.
       </p>
     </div>
+    <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      Reload
+    </button>
   </header>
 
   @if (error(); as message) {
@@ -19,6 +23,15 @@
       <input type="text" formControlName="title" placeholder="e.g. Website redesign" />
     </label>
     <label class="crud__field">
+      <span>Goal</span>
+      <select formControlName="goalId">
+        <option value="">None</option>
+        @for (goal of goals(); track goal.id) {
+          <option [value]="goal.id">{{ goal.title }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field">
       <span>Category</span>
       <select formControlName="categoryId">
         <option value="">None</option>
@@ -26,6 +39,26 @@
           <option [value]="category.id">{{ category.name }}</option>
         }
       </select>
+    </label>
+    <label class="crud__field">
+      <span>Start</span>
+      <input type="date" formControlName="startDate" />
+    </label>
+    <label class="crud__field">
+      <span>Target</span>
+      <input type="date" formControlName="targetDate" />
+    </label>
+    <label class="crud__field">
+      <span>Status</span>
+      <select formControlName="status">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </label>
+    <label class="crud__field crud__field--wide">
+      <span>Description</span>
+      <input type="text" formControlName="description" placeholder="Optional context" />
     </label>
     <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
       <mat-icon>add</mat-icon>
@@ -45,18 +78,99 @@
     <ul class="crud__list">
       @for (project of projects(); track project.id) {
         <li class="crud__item">
-          <div>
-            <strong>{{ project.title }}</strong>
-            <p>
-              {{ project.status }}
-              @if (categoryName(project.categoryId); as cat) {
-                · {{ cat }}
-              }
-              @if (project.targetDate) {
-                · target {{ project.targetDate }}
-              }
-            </p>
-          </div>
+          @if (editingId() === project.id) {
+            <form class="crud__edit" [formGroup]="editForm" (ngSubmit)="saveEdit(project)">
+              <label class="crud__field">
+                <span>Title</span>
+                <input type="text" formControlName="title" />
+              </label>
+              <label class="crud__field">
+                <span>Goal</span>
+                <select formControlName="goalId">
+                  <option value="">None</option>
+                  @for (goal of goals(); track goal.id) {
+                    <option [value]="goal.id">{{ goal.title }}</option>
+                  }
+                </select>
+              </label>
+              <label class="crud__field">
+                <span>Category</span>
+                <select formControlName="categoryId">
+                  <option value="">None</option>
+                  @for (category of categories(); track category.id) {
+                    <option [value]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="crud__field">
+                <span>Start</span>
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label class="crud__field">
+                <span>Target</span>
+                <input type="date" formControlName="targetDate" />
+              </label>
+              <label class="crud__field">
+                <span>Status</span>
+                <select formControlName="status">
+                  @for (status of statuses; track status) {
+                    <option [value]="status">{{ status }}</option>
+                  }
+                </select>
+              </label>
+              <label class="crud__field crud__field--wide">
+                <span>Description</span>
+                <input type="text" formControlName="description" />
+              </label>
+              <div class="crud__edit-actions">
+                <button mat-flat-button color="primary" type="submit">Save</button>
+                <button mat-stroked-button type="button" (click)="cancelEdit()">Cancel</button>
+              </div>
+            </form>
+          } @else {
+            <div class="crud__item-main">
+              <div>
+                <div class="crud__item-head">
+                  <strong>{{ project.title }}</strong>
+                  <span class="crud__status" [attr.data-status]="project.status">{{ project.status }}</span>
+                </div>
+                <p>
+                  @if (goalTitle(project.goalId); as goal) {
+                    {{ goal }} ·
+                  }
+                  @if (categoryName(project.categoryId); as cat) {
+                    {{ cat }} ·
+                  }
+                  @if (project.startDate || project.targetDate) {
+                    @if (project.startDate) {
+                      {{ project.startDate }}
+                    }
+                    @if (project.startDate && project.targetDate) {
+                      →
+                    }
+                    @if (project.targetDate) {
+                      {{ project.targetDate }}
+                    }
+                  } @else {
+                    no dates set
+                  }
+                </p>
+                @if (project.description) {
+                  <p class="crud__description">{{ project.description }}</p>
+                }
+              </div>
+            </div>
+            <div class="crud__item-actions">
+              <button mat-stroked-button type="button" (click)="startEdit(project)">
+                <mat-icon>edit</mat-icon>
+                Edit
+              </button>
+              <button mat-stroked-button type="button" (click)="remove(project)">
+                <mat-icon>delete</mat-icon>
+                Remove
+              </button>
+            </div>
+          }
         </li>
       }
     </ul>
