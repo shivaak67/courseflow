@@ -79,7 +79,7 @@ class ReminderServiceTest {
                         ReminderEntityType.TASK,
                         TASK_ID,
                         Instant.parse("2026-08-25T18:00:00Z"),
-                        NotificationChannel.IN_APP)))
+                        NotificationChannel.EMAIL)))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("TASK not found");
         verify(reminderRepository, never()).save(any());
@@ -115,7 +115,7 @@ class ReminderServiceTest {
         Reminder saved = captor.getValue();
         assertThat(saved.getUserId()).isEqualTo(USER_A);
         assertThat(saved.getStatus()).isEqualTo(ReminderStatus.PENDING);
-        assertThat(saved.getChannel()).isEqualTo(NotificationChannel.IN_APP);
+        assertThat(saved.getChannel()).isEqualTo(NotificationChannel.EMAIL);
         assertThat(saved.getAttemptCount()).isZero();
         assertThat(response.id()).isEqualTo(REMINDER_ID);
         assertThat(response.status()).isEqualTo(ReminderStatus.PENDING);

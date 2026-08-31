@@ -17,6 +17,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 100%;
   padding: 1.35rem 1rem 1.25rem;
   border-right: 1px solid var(--prio-line);
   background:
@@ -57,6 +58,17 @@
 .shell__nav {
   display: grid;
   gap: 0.35rem;
+  flex: 1;
+}
+
+.shell__bottom {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--prio-line);
+}
+
+.shell__link--settings {
+  margin-top: 0.15rem;
 }
 
 .shell__link {
@@ -99,30 +111,6 @@
   border-radius: 999px;
   background: var(--prio-teal);
   transform: translateY(-50%);
-}
-
-.shell__foot {
-  margin-top: auto;
-  padding: 1rem;
-  border-radius: 14px;
-  background: linear-gradient(160deg, rgba(11, 110, 106, 0.12), rgba(255, 255, 255, 0.55));
-  border: 1px solid rgba(11, 110, 106, 0.12);
-}
-
-.shell__foot-label {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--prio-teal);
-}
-
-.shell__foot-copy {
-  margin: 0.4rem 0 0;
-  color: var(--prio-ink-soft);
-  font-size: 0.86rem;
-  line-height: 1.45;
 }
 
 .shell__stage {
@@ -199,6 +187,10 @@
   border-color: var(--prio-line) !important;
 }
 
+.shell__settings-mobile {
+  display: none;
+}
+
 .shell__content {
   flex: 1;
   padding: 0.75rem 1.75rem 1.75rem;
@@ -221,8 +213,16 @@
     padding-bottom: 0.25rem;
   }
 
-  .shell__foot {
+  .shell__bottom {
     display: none;
+  }
+
+  .shell__settings-mobile {
+    display: inline-flex;
+  }
+
+  .shell__settings-mobile--active {
+    color: var(--prio-teal-deep);
   }
 
   .shell__identity-text {

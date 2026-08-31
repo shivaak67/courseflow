@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
@@ -14,7 +13,6 @@ import { AuthService } from '../../core/auth/auth.service';
     RouterLinkActive,
     MatButtonModule,
     MatIconModule,
-    MatSidenavModule,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -25,16 +23,13 @@ export class ShellComponent {
 
   readonly navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
+    { label: 'Today', path: '/today', icon: 'timeline' },
     { label: 'Tasks', path: '/tasks', icon: 'checklist' },
-    { label: 'Schedule', path: '/schedule', icon: 'schedule' },
-    { label: 'Routines', path: '/routines', icon: 'autorenew' },
-    { label: 'Goals', path: '/goals', icon: 'flag' },
-    { label: 'Projects', path: '/projects', icon: 'folder_open' },
-    { label: 'Categories', path: '/categories', icon: 'label' },
     { label: 'Calendar', path: '/calendar', icon: 'calendar_month' },
-    { label: 'Insights', path: '/insights', icon: 'insights' },
-    { label: 'Notifications', path: '/notifications', icon: 'notifications' },
-    { label: 'Settings', path: '/settings', icon: 'settings' },
+    { label: 'Insights', path: '/insights', icon: 'bar_chart' },
+    { label: 'Reminders', path: '/reminders', icon: 'notifications' },
+    { label: 'Focus', path: '/focus', icon: 'center_focus_strong' },
+    { label: 'AI assistant', path: '/assistant', icon: 'smart_toy' },
   ];
 
   logout(): void {

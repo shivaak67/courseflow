@@ -3,6 +3,9 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  AssistantChatRequest,
+  AssistantChatResponse,
+  AssistantStatusResponse,
   CalendarEventDto,
   CategoryDto,
   CreateCalendarEventRequest,
@@ -19,8 +22,13 @@ import {
   InsightsSummary,
   NotificationDto,
   NotificationSettingsDto,
+  PhoneStatusDto,
+  PhoneUpdateRequest,
+  PhoneVerifyRequest,
   ProjectDto,
   ReminderDto,
+  ReminderScheduleRequest,
+  ReminderScheduleResponse,
   RoutineDto,
   RoutineOccurrenceDto,
   ScheduleBlockDto,
@@ -201,6 +209,28 @@ export class ApiService {
     return this.http.post<ReminderDto>(`${this.base}/api/reminders/${id}/cancel`, {});
   }
 
+  scheduleReminders(body: ReminderScheduleRequest): Observable<ReminderScheduleResponse> {
+    return this.http.post<ReminderScheduleResponse>(`${this.base}/api/reminders/schedule`, body);
+  }
+
+  // --- Phone verification ---
+
+  getPhoneStatus(): Observable<PhoneStatusDto> {
+    return this.http.get<PhoneStatusDto>(`${this.base}/api/phone`);
+  }
+
+  updatePhone(body: PhoneUpdateRequest): Observable<PhoneStatusDto> {
+    return this.http.put<PhoneStatusDto>(`${this.base}/api/phone`, body);
+  }
+
+  sendPhoneCode(): Observable<PhoneStatusDto> {
+    return this.http.post<PhoneStatusDto>(`${this.base}/api/phone/send-code`, {});
+  }
+
+  verifyPhone(body: PhoneVerifyRequest): Observable<PhoneStatusDto> {
+    return this.http.post<PhoneStatusDto>(`${this.base}/api/phone/verify`, body);
+  }
+
   // --- Notifications ---
 
   listNotifications(unreadOnly = false): Observable<NotificationDto[]> {
@@ -256,6 +286,16 @@ export class ApiService {
 
   getDashboardSummary(): Observable<DashboardSummary> {
     return this.http.get<DashboardSummary>(`${this.base}/api/dashboard/summary`);
+  }
+
+  // --- AI assistant ---
+
+  getAssistantStatus(): Observable<AssistantStatusResponse> {
+    return this.http.get<AssistantStatusResponse>(`${this.base}/api/assistant/status`);
+  }
+
+  chatWithAssistant(body: AssistantChatRequest): Observable<AssistantChatResponse> {
+    return this.http.post<AssistantChatResponse>(`${this.base}/api/assistant/chat`, body);
   }
 
   // --- Insights ---

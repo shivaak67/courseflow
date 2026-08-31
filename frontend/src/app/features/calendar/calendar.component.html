@@ -4,7 +4,7 @@
       <p class="prio-kicker">Planning</p>
       <h1 class="prio-title">Calendar</h1>
       <p class="prio-lede">
-        See task due dates and personal events by day — add events or inspect what falls on a date.
+        See task due dates and time blocks on each day. Add time blocks from the Tasks page.
       </p>
     </div>
   </header>
@@ -16,180 +16,57 @@
   @if (loading()) {
     <p class="cal__banner">Loading calendar…</p>
   } @else {
-    <div class="cal__layout">
-      <div class="cal surface">
-        <div class="cal__head">
-          <div class="cal__nav">
-            <button mat-icon-button type="button" (click)="prevMonth()" aria-label="Previous month">
-              <mat-icon>chevron_left</mat-icon>
-            </button>
-            <h2>{{ monthLabel() }}</h2>
-            <button mat-icon-button type="button" (click)="nextMonth()" aria-label="Next month">
-              <mat-icon>chevron_right</mat-icon>
-            </button>
-          </div>
-          <span>
-            {{ monthItemCount() === 0 ? 'Nothing this month' : monthItemCount() + ' items this month' }}
-          </span>
+    <div class="cal surface">
+      <div class="cal__head">
+        <div class="cal__nav">
+          <button mat-icon-button type="button" (click)="prevMonth()" aria-label="Previous month">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <h2>{{ monthLabel() }}</h2>
+          <button mat-icon-button type="button" (click)="nextMonth()" aria-label="Next month">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
         </div>
+        <span>
+          {{ monthItemCount() === 0 ? 'Nothing this month' : monthItemCount() + ' items this month' }}
+        </span>
+      </div>
 
-        <div class="cal__weekdays">
-          @for (day of weekdays; track day) {
-            <span>{{ day }}</span>
-          }
-        </div>
+      <div class="cal__weekdays">
+        @for (day of weekdays; track day) {
+          <span>{{ day }}</span>
+        }
+      </div>
 
-        <div class="cal__grid">
-          @for (cell of cells(); track cell.key) {
-            <div
-              class="cal__cell"
-              [class.cal__cell--muted]="!cell.inMonth"
-              [class.cal__cell--accent]="cell.chips.length > 0"
-              [class.cal__cell--today]="cell.isToday"
-              [class.cal__cell--selected]="cell.inMonth && selectedDayKey() === cell.key"
-              [class.cal__cell--clickable]="cell.inMonth"
-              [attr.role]="cell.inMonth ? 'button' : null"
-              [attr.tabindex]="cell.inMonth ? 0 : null"
-              (click)="selectDay(cell)"
-              (keydown.enter)="selectDay(cell)"
-              (keydown.space)="$event.preventDefault(); selectDay(cell)"
-            >
-              @if (cell.day != null) {
-                <span class="cal__day">{{ cell.day }}</span>
-                @for (chip of cell.chips.slice(0, 2); track chip.id) {
+      <div class="cal__grid">
+        @for (cell of cells(); track cell.key) {
+          <div
+            class="cal__cell"
+            [class.cal__cell--muted]="!cell.inMonth"
+            [class.cal__cell--accent]="cell.chips.length > 0"
+            [class.cal__cell--today]="cell.isToday"
+          >
+            @if (cell.day != null) {
+              <span class="cal__day">{{ cell.day }}</span>
+              <div class="cal__chips">
+                @for (chip of cell.chips.slice(0, 3); track chip.id) {
                   <span
                     class="cal__chip"
                     [class.cal__chip--event]="chip.kind === 'event'"
+                    [class.cal__chip--task]="chip.kind === 'task'"
                     [attr.title]="chip.label"
                   >
                     {{ chip.label }}
                   </span>
                 }
-                @if (cell.chips.length > 2) {
-                  <span class="cal__more">+{{ cell.chips.length - 2 }} more</span>
+                @if (cell.chips.length > 3) {
+                  <span class="cal__more">+{{ cell.chips.length - 3 }} more</span>
                 }
-              }
-            </div>
-          }
-        </div>
-
-        @if (monthItemCount() === 0) {
-          <div class="prio-empty cal__empty">
-            <div class="prio-empty__mark"><mat-icon>event_busy</mat-icon></div>
-            <h3>No items this month</h3>
-            <p>Task due dates and calendar events will show on their days.</p>
+              </div>
+            }
           </div>
         }
       </div>
-
-      <aside class="cal__side">
-        <article class="surface">
-          <div class="surface__head">
-            <h2>New event</h2>
-            <span>Personal calendar</span>
-          </div>
-
-          <form class="cal__form" [formGroup]="eventForm" (ngSubmit)="submitEvent()">
-            <label class="cal__field">
-              <span>Title</span>
-              <input type="text" formControlName="title" placeholder="e.g. Dentist, team sync" />
-            </label>
-
-            <label class="cal__field">
-              <span>Start</span>
-              <input type="datetime-local" formControlName="startLocal" />
-            </label>
-
-            <label class="cal__field">
-              <span>End</span>
-              <input type="datetime-local" formControlName="endLocal" />
-            </label>
-
-            @if (formError(); as message) {
-              <p class="cal__form-msg cal__form-msg--error" role="alert">{{ message }}</p>
-            }
-            @if (formSuccess(); as message) {
-              <p class="cal__form-msg">{{ message }}</p>
-            }
-
-            <button
-              mat-flat-button
-              color="primary"
-              type="submit"
-              class="cal__submit"
-              [disabled]="submitting()"
-            >
-              <mat-icon>event</mat-icon>
-              {{ submitting() ? 'Saving…' : 'Add event' }}
-            </button>
-          </form>
-        </article>
-
-        <article class="surface">
-          <div class="surface__head">
-            <h2>{{ selectedDayLabel() }}</h2>
-            <span>Due · events · blocks</span>
-          </div>
-
-          @if (!selectedDayKey()) {
-            <div class="prio-empty">
-              <div class="prio-empty__mark"><mat-icon>touch_app</mat-icon></div>
-              <h3>Select a day</h3>
-              <p>Click a day in the grid to see what’s planned.</p>
-            </div>
-          } @else if (!dayHasItems()) {
-            <div class="prio-empty">
-              <div class="prio-empty__mark"><mat-icon>wb_sunny</mat-icon></div>
-              <h3>Clear day</h3>
-              <p>No tasks due, events, or schedule blocks on this date.</p>
-            </div>
-          } @else {
-            <ul class="day-list">
-              @for (task of dayTasks(); track task.id) {
-                <li>
-                  <div>
-                    <span class="day-list__tag">Task due</span>
-                    <strong>{{ task.title }}</strong>
-                    <p>{{ task.priority }} · {{ task.status }}</p>
-                  </div>
-                </li>
-              }
-              @for (event of dayEvents(); track event.id) {
-                <li>
-                  <div>
-                    <span class="day-list__tag day-list__tag--event">Event</span>
-                    <strong>{{ event.title }}</strong>
-                    <p>
-                      @if (event.allDay) {
-                        All day
-                      } @else {
-                        {{ formatTimeRange(event.startAt, event.endAt) }}
-                      }
-                    </p>
-                  </div>
-                  <button mat-icon-button type="button" (click)="deleteEvent(event)" aria-label="Delete event">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </li>
-              }
-              @for (block of dayBlocks(); track block.id) {
-                <li>
-                  <div>
-                    <span class="day-list__tag day-list__tag--block">Block</span>
-                    <strong>{{ blockTitle(block) }}</strong>
-                    <p>
-                      {{ formatTimeRange(block.startAt, block.endAt) }}
-                      @if (block.completed) {
-                        · done
-                      }
-                    </p>
-                  </div>
-                </li>
-              }
-            </ul>
-          }
-        </article>
-      </aside>
     </div>
   }
 </section>

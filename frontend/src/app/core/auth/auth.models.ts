@@ -9,7 +9,8 @@ export interface UserDto {
   lastName: string;
   email: string;
   authProvider: AuthProvider;
-  role: UserRole;
+  phoneNumber: string | null;
+  phoneVerified: boolean;
 }
 
 export interface AuthResponse {

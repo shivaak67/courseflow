@@ -18,9 +18,15 @@
       }
     </nav>
 
-    <div class="shell__foot">
-      <p class="shell__foot-label">Focus mode</p>
-      <p class="shell__foot-copy">Rank work by deadline, weight, and effort.</p>
+    <div class="shell__bottom">
+      <a
+        class="shell__link shell__link--settings"
+        routerLink="/settings"
+        routerLinkActive="shell__link--active"
+      >
+        <mat-icon aria-hidden="true">settings</mat-icon>
+        <span>Settings</span>
+      </a>
     </div>
   </aside>
 
@@ -31,6 +37,15 @@
         <p class="shell__greeting">Stay ahead of the week</p>
       </div>
       <div class="shell__actions">
+        <a
+          mat-icon-button
+          class="shell__settings-mobile"
+          routerLink="/settings"
+          routerLinkActive="shell__settings-mobile--active"
+          aria-label="Settings"
+        >
+          <mat-icon>settings</mat-icon>
+        </a>
         @if (auth.currentUser(); as user) {
           <div class="shell__identity">
             <span class="shell__avatar" aria-hidden="true">{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</span>

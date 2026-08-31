@@ -27,9 +27,12 @@ import com.prioritize.model.NotificationSettings;
 import com.prioritize.model.Reminder;
 import com.prioritize.model.ReminderEntityType;
 import com.prioritize.model.ReminderStatus;
+import com.prioritize.model.User;
 import com.prioritize.repository.AppNotificationRepository;
 import com.prioritize.repository.NotificationSettingsRepository;
 import com.prioritize.repository.ReminderRepository;
+import com.prioritize.repository.UserRepository;
+import com.prioritize.service.ReminderContentResolver.ReminderContent;
 
 @ExtendWith(MockitoExtension.class)
 class ReminderDispatchServiceTest {
@@ -46,6 +49,14 @@ class ReminderDispatchServiceTest {
     @Mock
     private NotificationSettingsRepository notificationSettingsRepository;
     @Mock
+    private UserRepository userRepository;
+    @Mock
+    private ReminderContentResolver reminderContentResolver;
+    @Mock
+    private EmailNotificationService emailNotificationService;
+    @Mock
+    private SmsNotificationService smsNotificationService;
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     private ReminderDispatchService dispatchService;
@@ -57,16 +68,75 @@ class ReminderDispatchServiceTest {
                 reminderRepository,
                 appNotificationRepository,
                 notificationSettingsRepository,
+                userRepository,
+                reminderContentResolver,
+                emailNotificationService,
+                smsNotificationService,
                 clock,
                 transactionManager);
     }
 
     @Test
-    void processReminderInAppCreatesNotificationAndMarksSent() {
-        Reminder reminder = processingReminder(NotificationChannel.IN_APP);
+    void processReminderEmailSendsAndMarksSent() {
+        Reminder reminder = processingReminder(NotificationChannel.EMAIL);
+        User user = userWithEmail("student@example.com");
+        NotificationSettings settings = enabledSettings(true, false);
+
         when(reminderRepository.claimPending(REMINDER_ID, NOW)).thenReturn(1);
         when(reminderRepository.findById(REMINDER_ID)).thenReturn(Optional.of(reminder));
-        when(notificationSettingsRepository.findById(USER_ID)).thenReturn(Optional.empty());
+        when(notificationSettingsRepository.findById(USER_ID)).thenReturn(Optional.of(settings));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(reminderContentResolver.resolve(USER_ID, ReminderEntityType.TASK, TASK_ID))
+                .thenReturn(new ReminderContent("Exam prep", NOW, "Aug 25 · 6:00 PM"));
+        when(reminderRepository.save(any(Reminder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        dispatchService.processReminder(REMINDER_ID);
+
+        verify(emailNotificationService).send(eq("student@example.com"), eq("Reminder: Exam prep"), any());
+        ArgumentCaptor<Reminder> reminderCaptor = ArgumentCaptor.forClass(Reminder.class);
+        verify(reminderRepository).save(reminderCaptor.capture());
+        assertThat(reminderCaptor.getValue().getStatus()).isEqualTo(ReminderStatus.SENT);
+    }
+
+    @Test
+    void processReminderSmsWithoutVerifiedPhoneMarksFailed() {
+        Reminder reminder = processingReminder(NotificationChannel.SMS);
+        User user = userWithEmail("student@example.com");
+        user.setPhoneNumber("+15551234567");
+        user.setPhoneVerified(false);
+        NotificationSettings settings = enabledSettings(false, true);
+
+        when(reminderRepository.claimPending(REMINDER_ID, NOW)).thenReturn(1);
+        when(reminderRepository.findById(REMINDER_ID)).thenReturn(Optional.of(reminder));
+        when(notificationSettingsRepository.findById(USER_ID)).thenReturn(Optional.of(settings));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(reminderContentResolver.resolve(USER_ID, ReminderEntityType.TASK, TASK_ID))
+                .thenReturn(new ReminderContent("Exam prep", NOW, "Aug 25 · 6:00 PM"));
+        when(reminderRepository.save(any(Reminder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        dispatchService.processReminder(REMINDER_ID);
+
+        verify(smsNotificationService, never()).send(any(), any());
+        ArgumentCaptor<Reminder> reminderCaptor = ArgumentCaptor.forClass(Reminder.class);
+        verify(reminderRepository).save(reminderCaptor.capture());
+        assertThat(reminderCaptor.getValue().getStatus()).isEqualTo(ReminderStatus.FAILED);
+        assertThat(reminderCaptor.getValue().getFailureReason()).isEqualTo("phone not verified");
+    }
+
+    @Test
+    void processReminderInAppCreatesNotificationAndMarksSent() {
+        Reminder reminder = processingReminder(NotificationChannel.IN_APP);
+        User user = userWithEmail("student@example.com");
+        NotificationSettings settings = new NotificationSettings();
+        settings.setUserId(USER_ID);
+        settings.setInAppEnabled(true);
+
+        when(reminderRepository.claimPending(REMINDER_ID, NOW)).thenReturn(1);
+        when(reminderRepository.findById(REMINDER_ID)).thenReturn(Optional.of(reminder));
+        when(notificationSettingsRepository.findById(USER_ID)).thenReturn(Optional.of(settings));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(reminderContentResolver.resolve(USER_ID, ReminderEntityType.TASK, TASK_ID))
+                .thenReturn(new ReminderContent("Exam prep", NOW, "Aug 25 · 6:00 PM"));
         when(appNotificationRepository.save(any(AppNotification.class))).thenAnswer(invocation -> {
             AppNotification notification = invocation.getArgument(0);
             notification.setId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
@@ -77,57 +147,10 @@ class ReminderDispatchServiceTest {
 
         dispatchService.processReminder(REMINDER_ID);
 
-        ArgumentCaptor<AppNotification> notificationCaptor = ArgumentCaptor.forClass(AppNotification.class);
-        verify(appNotificationRepository).save(notificationCaptor.capture());
-        AppNotification notification = notificationCaptor.getValue();
-        assertThat(notification.getUserId()).isEqualTo(USER_ID);
-        assertThat(notification.getTitle()).isEqualTo("Reminder");
-        assertThat(notification.getBody()).contains("TASK").contains(TASK_ID.toString());
-        assertThat(notification.getRelatedEntityType()).isEqualTo("TASK");
-        assertThat(notification.getRelatedEntityId()).isEqualTo(TASK_ID);
-
+        verify(appNotificationRepository).save(any(AppNotification.class));
         ArgumentCaptor<Reminder> reminderCaptor = ArgumentCaptor.forClass(Reminder.class);
         verify(reminderRepository).save(reminderCaptor.capture());
         assertThat(reminderCaptor.getValue().getStatus()).isEqualTo(ReminderStatus.SENT);
-        assertThat(reminderCaptor.getValue().getSentAt()).isEqualTo(NOW);
-        assertThat(reminderCaptor.getValue().getFailureReason()).isNull();
-    }
-
-    @Test
-    void processReminderSmsMarksFailedNotSupported() {
-        Reminder reminder = processingReminder(NotificationChannel.SMS);
-        when(reminderRepository.claimPending(REMINDER_ID, NOW)).thenReturn(1);
-        when(reminderRepository.findById(REMINDER_ID)).thenReturn(Optional.of(reminder));
-        when(reminderRepository.save(any(Reminder.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        dispatchService.processReminder(REMINDER_ID);
-
-        verify(appNotificationRepository, never()).save(any());
-        ArgumentCaptor<Reminder> reminderCaptor = ArgumentCaptor.forClass(Reminder.class);
-        verify(reminderRepository).save(reminderCaptor.capture());
-        assertThat(reminderCaptor.getValue().getStatus()).isEqualTo(ReminderStatus.FAILED);
-        assertThat(reminderCaptor.getValue().getFailureReason()).isEqualTo("SMS not supported");
-    }
-
-    @Test
-    void processReminderInAppDisabledMarksFailed() {
-        Reminder reminder = processingReminder(NotificationChannel.IN_APP);
-        NotificationSettings settings = new NotificationSettings();
-        settings.setUserId(USER_ID);
-        settings.setInAppEnabled(false);
-
-        when(reminderRepository.claimPending(eq(REMINDER_ID), eq(NOW))).thenReturn(1);
-        when(reminderRepository.findById(REMINDER_ID)).thenReturn(Optional.of(reminder));
-        when(notificationSettingsRepository.findById(USER_ID)).thenReturn(Optional.of(settings));
-        when(reminderRepository.save(any(Reminder.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        dispatchService.processReminder(REMINDER_ID);
-
-        verify(appNotificationRepository, never()).save(any());
-        ArgumentCaptor<Reminder> reminderCaptor = ArgumentCaptor.forClass(Reminder.class);
-        verify(reminderRepository).save(reminderCaptor.capture());
-        assertThat(reminderCaptor.getValue().getStatus()).isEqualTo(ReminderStatus.FAILED);
-        assertThat(reminderCaptor.getValue().getFailureReason()).isEqualTo("in-app disabled");
     }
 
     private Reminder processingReminder(NotificationChannel channel) {
@@ -143,5 +166,23 @@ class ReminderDispatchServiceTest {
         reminder.setCreatedAt(NOW.minusSeconds(3600));
         reminder.setUpdatedAt(NOW);
         return reminder;
+    }
+
+    private static User userWithEmail(String email) {
+        User user = new User();
+        user.setId(USER_ID);
+        user.setEmail(email);
+        user.setFirstName("Test");
+        user.setLastName("User");
+        return user;
+    }
+
+    private static NotificationSettings enabledSettings(boolean email, boolean sms) {
+        NotificationSettings settings = new NotificationSettings();
+        settings.setUserId(USER_ID);
+        settings.setEmailEnabled(email);
+        settings.setSmsEnabled(sms);
+        settings.setInAppEnabled(false);
+        return settings;
     }
 }

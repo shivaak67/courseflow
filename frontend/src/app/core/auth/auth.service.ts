@@ -48,6 +48,10 @@ export class AuthService {
     );
   }
 
+  refreshCurrentUser(): void {
+    this.me().subscribe();
+  }
+
   startGoogleSignIn(): void {
     window.location.href = `${environment.apiBaseUrl}/oauth2/authorization/google`;
   }

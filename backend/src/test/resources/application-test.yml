@@ -17,6 +17,9 @@ spring:
   sql:
     init:
       mode: never
+  mail:
+    host: localhost
+    port: 1025
 
 app:
   cors:
@@ -26,4 +29,9 @@ app:
     expiration-ms: 86400000
   oauth:
     google:
+      enabled: false
+  notifications:
+    email:
+      enabled: false
+    sms:
       enabled: false

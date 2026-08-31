@@ -1,0 +1,151 @@
+<section class="page prio-page today">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Schedule</p>
+      <h1 class="prio-title">Today</h1>
+      <p class="prio-lede">Your visual timeline for the day — calendar events and timed tasks.</p>
+    </div>
+    <div class="page__actions">
+      @if (!isToday()) {
+        <button mat-stroked-button type="button" (click)="goToToday()">
+          <mat-icon>today</mat-icon>
+          Jump to today
+        </button>
+      }
+      <a mat-stroked-button routerLink="/calendar" class="page__cta">
+        <mat-icon>calendar_month</mat-icon>
+        Calendar
+      </a>
+      <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Reload
+      </button>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="today__banner today__banner--error" role="alert">{{ message }}</p>
+  }
+
+  <p class="today__legend">
+    <span><i class="today__swatch today__swatch--event"></i> Event</span>
+    <span><i class="today__swatch today__swatch--task"></i> Task due time</span>
+  </p>
+
+  <div class="today__nav">
+    <button mat-icon-button type="button" (click)="prevDay()" aria-label="Previous day">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <h2>{{ dayLabel() }}</h2>
+    <button mat-icon-button type="button" (click)="nextDay()" aria-label="Next day">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  @if (unscheduledTasks().length > 0) {
+    <section class="today__unscheduled surface">
+      <div class="surface__head">
+        <h3>Due today (no time set)</h3>
+        <a routerLink="/tasks">Manage tasks</a>
+      </div>
+      <ul class="today__task-list">
+        @for (task of unscheduledTasks(); track task.id) {
+          <li>
+            <span class="today__task-pill" [attr.data-priority]="task.priority">{{ task.priority }}</span>
+            <span>{{ task.title }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (loading()) {
+    <p class="today__note"><mat-icon>hourglass_top</mat-icon> Loading timeline…</p>
+  } @else if (!hasAnything()) {
+    <div class="prio-empty">
+      <div class="prio-empty__mark"><mat-icon>event_available</mat-icon></div>
+      <h3>Nothing scheduled</h3>
+      <p>Add calendar events or tasks with due times to see them on the timeline.</p>
+      <a mat-stroked-button routerLink="/calendar">Open calendar</a>
+    </div>
+  } @else {
+    <article class="today__timeline surface">
+      <p class="today__range-hint">Full day · 12 AM – 11 PM · scroll to see all hours</p>
+      <div #timelineScroll class="today__scroll">
+        <div class="today__grid" [style.height.px]="timelineHeightPx">
+          <div class="today__hours" [style.height.px]="timelineHeightPx">
+            @for (hour of hourLabels; track hour) {
+              <div class="today__hour-label" [style.height.px]="hourHeightPx">
+                {{ formatHour(hour) }}
+              </div>
+            }
+          </div>
+
+          <div class="today__canvas" [style.height.px]="timelineHeightPx">
+            @for (hour of hourLabels; track hour) {
+              <div
+                class="today__hour-line"
+                [style.top.px]="hour * hourHeightPx"
+                [style.height.px]="hourHeightPx"
+              ></div>
+            }
+
+            @for (item of timelineItems(); track item.id) {
+              @let layout = itemStyle(item);
+              <div
+                class="today__item"
+                [class.today__item--event]="item.kind === 'event'"
+                [class.today__item--task]="item.kind === 'task'"
+                [class.today__item--done]="item.completed"
+                [class.today__item--compact]="isCompact(item)"
+                [class.today__item--selected]="item.eventId && editingEventId() === item.eventId"
+                [style.top]="layout['top']"
+                [style.height]="layout['height']"
+                [style.min-height]="layout['minHeight']"
+                [attr.role]="item.kind === 'event' ? 'button' : null"
+                [attr.tabindex]="item.kind === 'event' ? 0 : null"
+                (click)="item.kind === 'event' ? selectEvent(item) : null"
+                (keydown.enter)="item.kind === 'event' ? selectEvent(item) : null"
+                (keydown.space)="$event.preventDefault(); item.kind === 'event' ? selectEvent(item) : null"
+              >
+                @if (!isCompact(item)) {
+                  <p class="today__item-kind">{{ kindLabel(item.kind) }}</p>
+                }
+                <strong>{{ item.title }}</strong>
+                <p class="today__item-time">{{ formatTimeLabel(item) }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (editingEvent(); as event) {
+        <section class="today__edit surface">
+          <div class="surface__head">
+            <h3>Edit event time</h3>
+            <button mat-button type="button" (click)="cancelEventEdit()">Cancel</button>
+          </div>
+          <p class="today__edit-title">{{ event.title }}</p>
+          <form class="today__edit-form" [formGroup]="eventTimeForm" (ngSubmit)="saveEventTime()">
+            <label>
+              <span>Start</span>
+              <input type="datetime-local" formControlName="startLocal" />
+            </label>
+            <label>
+              <span>End</span>
+              <input type="datetime-local" formControlName="endLocal" />
+            </label>
+            <div class="today__edit-actions">
+              <button mat-flat-button color="primary" type="submit" [disabled]="savingEvent()">
+                {{ savingEvent() ? 'Saving…' : 'Save time' }}
+              </button>
+            </div>
+          </form>
+          @if (eventFormError(); as formError) {
+            <p class="today__edit-error" role="alert">{{ formError }}</p>
+          }
+        </section>
+      }
+    </article>
+  }
+</section>

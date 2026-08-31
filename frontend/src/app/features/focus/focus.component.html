@@ -1,0 +1,218 @@
+<section class="page prio-page focus">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Focus</p>
+      <h1 class="prio-title">Study timer</h1>
+      <p class="prio-lede">
+        Pick a task, start a timed session or stopwatch, and Prioritize logs the time you worked.
+      </p>
+    </div>
+    <div class="page__actions">
+      <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading() || saving()">
+        <mat-icon>refresh</mat-icon>
+        Reload
+      </button>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="focus__banner focus__banner--error" role="alert">{{ message }}</p>
+  }
+  @if (success(); as message) {
+    <p class="focus__banner" role="status">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="focus__note"><mat-icon>hourglass_top</mat-icon> Loading focus timer…</p>
+  } @else if (focusTasks().length === 0) {
+    <article class="surface">
+      <div class="focus__empty">
+        <h3>No open tasks</h3>
+        <p>Add a task first, then come back to start a focus session.</p>
+      </div>
+    </article>
+  } @else {
+    <div class="focus__stack">
+      <article class="surface">
+        @if (isActive()) {
+          <div class="focus__active">
+            <p class="focus__active-kicker">Focusing on</p>
+            <h2 class="focus__active-task">{{ selectedTask()?.title }}</h2>
+            <p class="focus__active-timer" aria-live="polite">{{ timerLabel() }}</p>
+
+            @if (mode() === 'timer') {
+              <div class="focus__progress" aria-hidden="true">
+                <span class="focus__progress-fill" [style.width.%]="progressPercent()"></span>
+                <span class="focus__progress-rest"></span>
+              </div>
+            }
+
+            <div class="focus__active-actions">
+              @if (phase() === 'running') {
+                <button mat-stroked-button type="button" (click)="pauseSession()" [disabled]="saving()">
+                  <mat-icon>pause</mat-icon>
+                  Pause
+                </button>
+              } @else {
+                <button mat-flat-button color="primary" type="button" (click)="resumeSession()" [disabled]="saving()">
+                  <mat-icon>play_arrow</mat-icon>
+                  Resume
+                </button>
+              }
+              <button mat-stroked-button type="button" (click)="stopAndSave()" [disabled]="saving()">
+                <mat-icon>stop</mat-icon>
+                {{ saving() ? 'Saving…' : 'End' }}
+              </button>
+            </div>
+
+            @if (statusFooter(); as footer) {
+              <p class="focus__active-footer">{{ footer }}</p>
+            }
+          </div>
+        } @else if (phase() === 'complete') {
+          <div class="focus__complete">
+            <p class="focus__active-kicker">Session saved</p>
+            <p class="focus__complete-copy">Your study time was logged to this task.</p>
+            <button mat-flat-button color="primary" type="button" (click)="startAnother()">
+              <mat-icon>replay</mat-icon>
+              Start another
+            </button>
+          </div>
+        } @else {
+          <div class="focus__mode-toggle" role="tablist" aria-label="Focus mode">
+            <button
+              type="button"
+              class="focus__mode-btn"
+              [class.focus__mode-btn--active]="mode() === 'timer'"
+              role="tab"
+              [attr.aria-selected]="mode() === 'timer'"
+              (click)="setMode('timer')"
+            >
+              Timer
+            </button>
+            <button
+              type="button"
+              class="focus__mode-btn"
+              [class.focus__mode-btn--active]="mode() === 'stopwatch'"
+              role="tab"
+              [attr.aria-selected]="mode() === 'stopwatch'"
+              (click)="setMode('stopwatch')"
+            >
+              Stopwatch
+            </button>
+          </div>
+
+          <label class="focus__field">
+            <span class="focus__label">Task</span>
+            <select
+              class="focus__select"
+              [ngModel]="selectedTaskId()"
+              (ngModelChange)="onTaskChange($event)"
+              [disabled]="saving()"
+            >
+              @for (task of focusTasks(); track task.id) {
+                <option [value]="task.id">{{ task.title }}</option>
+              }
+            </select>
+          </label>
+
+          @if (mode() === 'timer') {
+            <section class="focus__section">
+              <p class="focus__label">Choose a session</p>
+              <ul class="focus__presets">
+                @for (preset of presets; track preset.id) {
+                  <li>
+                    <button
+                      type="button"
+                      class="focus__preset"
+                      [class.focus__preset--active]="selectedPresetId() === preset.id"
+                      (click)="selectPreset(preset)"
+                    >
+                      <span class="focus__preset-emoji" aria-hidden="true">{{ preset.emoji }}</span>
+                      <span class="focus__preset-copy">
+                        <strong>{{ preset.label }}</strong>
+                        <span>{{ preset.subtitle }}</span>
+                      </span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+
+            <section class="focus__section">
+              <p class="focus__label">Session length</p>
+              <div class="focus__quick-row">
+                @for (minutes of quickMinutes; track minutes) {
+                  <button
+                    type="button"
+                    class="focus__chip"
+                    [class.focus__chip--active]="durationMinutes() === minutes"
+                    (click)="selectQuickMinutes(minutes)"
+                  >
+                    {{ minutes }} min
+                  </button>
+                }
+              </div>
+
+              @if (isCustom()) {
+                <div class="focus__custom">
+                  <span class="focus__label">Custom</span>
+                  <div class="focus__custom-controls">
+                    <button mat-stroked-button type="button" (click)="adjustCustomMinutes(-customStep)">
+                      −
+                    </button>
+                    <span class="focus__custom-value">{{ durationMinutes() }} min</span>
+                    <button mat-stroked-button type="button" (click)="adjustCustomMinutes(customStep)">
+                      +
+                    </button>
+                  </div>
+                </div>
+              }
+            </section>
+
+            <p class="focus__preview" aria-live="polite">{{ timerLabel() }}</p>
+          } @else {
+            <section class="focus__section focus__section--stopwatch">
+              <p class="focus__label">Stopwatch</p>
+              <p class="focus__preview focus__preview--stopwatch" aria-live="polite">00:00</p>
+              <p class="focus__hint">Count up until you're done studying.</p>
+            </section>
+          }
+
+          <div class="focus__start-row">
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              (click)="startSession()"
+              [disabled]="!canStart()"
+            >
+              <mat-icon>{{ mode() === 'stopwatch' ? 'timer' : 'play_arrow' }}</mat-icon>
+              {{ mode() === 'stopwatch' ? 'Start studying' : 'Start focus' }}
+            </button>
+          </div>
+        }
+      </article>
+
+      @if (recentSessions().length > 0) {
+        <article class="surface">
+          <div class="focus__sessions-head">
+            <h2>Recent sessions</h2>
+            <span>Logged time</span>
+          </div>
+          <ul class="focus__sessions">
+            @for (session of recentSessions(); track session.id) {
+              <li>
+                <div>
+                  <strong>{{ session.taskTitle }}</strong>
+                  <p>{{ session.when }}</p>
+                </div>
+                <span>{{ session.durationMinutes }} min</span>
+              </li>
+            }
+          </ul>
+        </article>
+      }
+    </div>
+  }
+</section>

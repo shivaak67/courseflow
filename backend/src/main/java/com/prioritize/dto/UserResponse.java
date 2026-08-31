@@ -11,5 +11,7 @@ public record UserResponse(
         String lastName,
         String email,
         AuthProvider authProvider,
-        Role role) {
+        Role role,
+        String phoneNumber,
+        boolean phoneVerified) {
 }

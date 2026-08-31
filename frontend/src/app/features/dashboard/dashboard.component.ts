@@ -4,20 +4,31 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import {
-  DashboardSummary,
-  InsightsSummary,
-  NotificationDto,
-  ScheduleBlockDto,
+  CalendarEventDto,
   TaskDto,
-  TaskPriority,
 } from '../../core/api/api.models';
 
-interface DashMetric {
+interface DashStat {
   label: string;
-  value: string;
-  hint: string;
-  tone?: 'default' | 'warn' | 'accent';
+  value: number;
+}
+
+interface PlanItem {
+  id: string;
+  kind: 'event' | 'task';
+  time: string;
+  endTime?: string;
+  title: string;
+  subtitle?: string;
+}
+
+interface DeadlineItem {
+  id: string;
+  title: string;
+  when: string;
+  sortKey: string;
 }
 
 @Component({
@@ -29,69 +40,177 @@ interface DashMetric {
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly completingId = signal<string | null>(null);
-  readonly summary = signal<DashboardSummary | null>(null);
-  readonly insights = signal<InsightsSummary | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
-  readonly notifications = signal<NotificationDto[]>([]);
-  readonly todayBlocks = signal<ScheduleBlockDto[]>([]);
+  readonly events = signal<CalendarEventDto[]>([]);
 
-  readonly unreadCount = computed(() => this.notifications().length);
+  readonly greeting = computed(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      return 'Good morning';
+    }
+    if (hour < 17) {
+      return 'Good afternoon';
+    }
+    return 'Good evening';
+  });
 
-  readonly metrics = computed<DashMetric[]>(() => {
-    const data = this.summary();
-    const insight = this.insights();
-    if (!data) {
-      return [
-        { label: 'Due today', value: '—', hint: 'Loading…' },
-        { label: 'This week', value: '—', hint: 'Loading…' },
-        { label: 'Overdue', value: '—', hint: 'Loading…' },
-        { label: 'Open', value: '—', hint: 'Loading…' },
-        { label: 'Minutes logged', value: '—', hint: 'Last 7 days' },
-        { label: 'Completion', value: '—', hint: 'Last 7 days' },
-      ];
+  readonly userName = computed(() => this.auth.currentUser()?.firstName ?? 'there');
+
+  readonly dateLabel = computed(() =>
+    new Date().toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    }),
+  );
+
+  readonly stats = computed((): DashStat[] => {
+    const today = toDateKey(new Date());
+    const weekEnd = addDays(startOfWeek(new Date()), 7);
+    const weekStartKey = toDateKey(startOfWeek(new Date()));
+    const weekEndKey = toDateKey(weekEnd);
+
+    let dueToday = 0;
+    let overdue = 0;
+    let dueThisWeek = 0;
+
+    for (const task of this.tasks()) {
+      const isOpen = task.status === 'TODO' || task.status === 'IN_PROGRESS';
+      if (!isOpen || !task.dueDate) {
+        continue;
+      }
+      if (task.dueDate === today) {
+        dueToday += 1;
+      }
+      if (task.dueDate < today) {
+        overdue += 1;
+      }
+      if (task.dueDate >= weekStartKey && task.dueDate < weekEndKey) {
+        dueThisWeek += 1;
+      }
     }
 
     return [
-      {
-        label: 'Due today',
-        value: String(data.dueTodayCount),
-        hint: 'Deadlines landing today',
-        tone: data.dueTodayCount > 0 ? 'accent' : 'default',
-      },
-      {
-        label: 'This week',
-        value: String(data.dueThisWeekCount),
-        hint: `${formatHours(data.estimatedHoursRemainingThisWeek)} estimated`,
-      },
-      {
-        label: 'Overdue',
-        value: String(data.overdueCount),
-        hint: 'Past due and still open',
-        tone: data.overdueCount > 0 ? 'warn' : 'default',
-      },
-      {
-        label: 'Open',
-        value: String(data.remainingCount),
-        hint: `${data.highPriorityCount} high priority`,
-      },
-      {
-        label: 'Minutes logged',
-        value: String(insight?.totalMinutesLogged ?? 0),
-        hint: 'Last 7 days',
-      },
-      {
-        label: 'Completion',
-        value: insight ? completionRatePercent(insight.completionRate) : '0%',
-        hint: `${insight?.tasksCompleted ?? 0} tasks finished`,
-      },
+      { label: 'Due Today', value: dueToday },
+      { label: 'Overdue', value: overdue },
+      { label: 'This Week', value: dueThisWeek },
     ];
   });
 
-  readonly workload = computed(() => this.summary()?.workloadByProject ?? []);
+  readonly todayPlan = computed((): PlanItem[] => {
+    const todayKey = toDateKey(new Date());
+    const items: PlanItem[] = [];
+
+    for (const event of this.events()) {
+      if (!overlapsDay(event.startAt, event.endAt, todayKey)) {
+        continue;
+      }
+      const start = new Date(event.startAt);
+      const end = new Date(event.endAt);
+      items.push({
+        id: `event-${event.id}`,
+        kind: 'event',
+        time: event.allDay ? 'All day' : formatTime(start),
+        endTime: event.allDay ? undefined : formatTime(end),
+        title: event.title,
+        subtitle: event.description ?? undefined,
+      });
+    }
+
+    for (const task of this.tasks()) {
+      if (!task.dueDate || dueDateKey(task.dueDate) !== todayKey || !task.dueTime) {
+        continue;
+      }
+      if (task.status === 'COMPLETED' || task.status === 'CANCELLED') {
+        continue;
+      }
+      const start = taskDateTime(task.dueDate, task.dueTime);
+      if (!start) {
+        continue;
+      }
+      items.push({
+        id: `task-${task.id}`,
+        kind: 'task',
+        time: formatTime(start),
+        title: task.title,
+      });
+    }
+
+    return items.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+  });
+
+  readonly weeklyProgress = computed(() => {
+    const weekStart = startOfWeek(new Date());
+    const weekEnd = addDays(weekStart, 7);
+    const weekStartKey = toDateKey(weekStart);
+    const weekEndKey = toDateKey(weekEnd);
+
+    let total = 0;
+    let done = 0;
+
+    for (const task of this.tasks()) {
+      if (!task.dueDate || task.dueDate < weekStartKey || task.dueDate >= weekEndKey) {
+        continue;
+      }
+      total += 1;
+      if (task.status === 'COMPLETED') {
+        done += 1;
+      }
+    }
+
+    const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+    return { done, total, percent };
+  });
+
+  readonly upcomingDeadlines = computed((): DeadlineItem[] => {
+    const weekStartKey = toDateKey(startOfWeek(new Date()));
+    const weekEndKey = toDateKey(addDays(startOfWeek(new Date()), 7));
+    const items: DeadlineItem[] = [];
+
+    for (const task of this.tasks()) {
+      const isOpen = task.status === 'TODO' || task.status === 'IN_PROGRESS';
+      if (
+        !isOpen ||
+        !task.dueDate ||
+        task.dueDate < weekStartKey ||
+        task.dueDate >= weekEndKey
+      ) {
+        continue;
+      }
+      const sortKey = task.dueTime
+        ? `${task.dueDate}T${task.dueTime.slice(0, 5)}`
+        : `${task.dueDate}T00:00`;
+      items.push({
+        id: `task-${task.id}`,
+        title: task.title,
+        when: relativeDueLabel(task.dueDate),
+        sortKey,
+      });
+    }
+
+    for (const event of this.events()) {
+      const start = new Date(event.startAt);
+      const end = new Date(event.endAt);
+      const dayKey = toDateKey(start);
+      if (dayKey < weekStartKey || dayKey >= weekEndKey) {
+        continue;
+      }
+      items.push({
+        id: `event-${event.id}`,
+        title: event.title,
+        when: event.allDay
+          ? relativeDueLabel(dayKey)
+          : `${relativeDueLabel(dayKey)} · ${formatTimeRange(start, end)}`,
+        sortKey: event.startAt,
+      });
+    }
+
+    return items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  });
 
   ngOnInit(): void {
     this.reload();
@@ -100,150 +219,130 @@ export class DashboardComponent implements OnInit {
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
-
-    const { from: insightsFrom, to: insightsTo } = lastSevenDaysWindow();
-    const { from: todayFrom, to: todayTo } = todayRangeIso();
+    const weekStart = startOfWeek(new Date());
+    const weekEnd = addDays(weekStart, 7);
+    const from = weekStart.toISOString();
+    const to = weekEnd.toISOString();
 
     forkJoin({
-      summary: this.api.getDashboardSummary(),
       tasks: this.api.listTasks(),
-      notifications: this.api.listNotifications(true),
-      todayBlocks: this.api.listScheduleBlocks(todayFrom, todayTo),
-      insights: this.api.getInsightsSummary(insightsFrom, insightsTo),
+      events: this.api.listCalendarEvents(from, to),
     }).subscribe({
-      next: ({ summary, tasks, notifications, todayBlocks, insights }) => {
-        this.summary.set(summary);
+      next: ({ tasks, events }) => {
         this.tasks.set(tasks);
-        this.notifications.set(notifications);
-        this.todayBlocks.set(sortBlocks(todayBlocks));
-        this.insights.set(insights);
+        this.events.set(events);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Could not load dashboard data. Is the backend running?');
-        this.summary.set(null);
-        this.insights.set(null);
+      error: (err) => {
+        const statusCode = err?.status as number | undefined;
+        if (statusCode === 401) {
+          this.error.set('Your session expired. Redirecting to login…');
+        } else if (statusCode === 0) {
+          this.error.set('Cannot reach the API. Is the backend running on port 8080?');
+        } else {
+          this.error.set('Could not load dashboard.');
+        }
         this.loading.set(false);
       },
     });
   }
 
-  focusItems(): TaskDto[] {
-    const priorityRank: Record<TaskPriority, number> = {
-      URGENT: 0,
-      HIGH: 1,
-      MEDIUM: 2,
-      LOW: 3,
-    };
-    return this.tasks()
-      .filter((t) => t.status === 'TODO' || t.status === 'IN_PROGRESS')
-      .sort((a, b) => {
-        const p = priorityRank[a.priority] - priorityRank[b.priority];
-        if (p !== 0) {
-          return p;
-        }
-        return (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999');
-      })
-      .slice(0, 5);
-  }
-
-  markComplete(task: TaskDto): void {
-    if (task.status === 'COMPLETED' || this.completingId() === task.id) {
-      return;
-    }
-
-    this.completingId.set(task.id);
-    this.api
-      .updateTask(task.id, {
-        title: task.title,
-        description: task.description,
-        categoryId: task.categoryId,
-        projectId: task.projectId,
-        dueDate: task.dueDate,
-        dueTime: task.dueTime,
-        estimatedMinutes: task.estimatedMinutes,
-        priority: task.priority,
-        status: 'COMPLETED',
-      })
-      .subscribe({
-        next: () => {
-          this.completingId.set(null);
-          this.reload();
-        },
-        error: () => {
-          this.error.set('Could not mark task complete.');
-          this.completingId.set(null);
-        },
-      });
-  }
-
-  dueLabel(dueDate: string | null): string {
-    if (!dueDate) {
-      return 'No due date';
-    }
-    const due = new Date(`${dueDate}T12:00:00`);
-    const days = Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (days < 0) {
-      return `Overdue by ${Math.abs(days)}d`;
-    }
-    if (days === 0) {
-      return 'Due today';
-    }
-    if (days === 1) {
-      return 'Due tomorrow';
-    }
-    return `Due in ${days} days`;
-  }
-
-  blockTitle(block: ScheduleBlockDto): string {
-    return block.taskTitle ?? this.tasks().find((t) => t.id === block.taskId)?.title ?? 'Task';
-  }
-
-  formatBlockTime(block: ScheduleBlockDto): string {
-    const start = new Date(block.startAt);
-    const end = new Date(block.endAt);
-    const time = (d: Date) =>
-      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-    return `${time(start)} – ${time(end)}`;
-  }
-
-  workloadBarWidth(hours: number): number {
-    const items = this.workload();
-    const max = Math.max(...items.map((w) => w.estimatedHours), 1);
-    return Math.max(8, Math.round((hours / max) * 100));
+  progressSegments(): boolean[] {
+    const progress = this.weeklyProgress();
+    const filled = Math.round((progress.percent / 100) * 10);
+    return Array.from({ length: 10 }, (_, i) => i < filled);
   }
 }
 
-function completionRatePercent(rate: number): string {
-  const pct = rate <= 1 ? rate * 100 : rate;
-  return `${Math.round(pct)}%`;
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function formatHours(hours: number): string {
-  if (hours <= 0) {
-    return '0h';
+function startOfWeek(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const mondayOffset = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - mondayOffset);
+  return d;
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function toDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function dueDateKey(dueDate: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+    return dueDate;
   }
-  return `${hours}h`;
+  return toDateKey(new Date(dueDate));
 }
 
-function sortBlocks(blocks: ScheduleBlockDto[]): ScheduleBlockDto[] {
-  return [...blocks].sort(
-    (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
-  );
+function overlapsDay(startAt: string, endAt: string, dayKey: string): boolean {
+  const [y, m, d] = dayKey.split('-').map(Number);
+  const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+  const dayEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0).getTime();
+  const start = new Date(startAt).getTime();
+  const end = new Date(endAt).getTime();
+  return start < dayEnd && end > dayStart;
 }
 
-function todayRangeIso(): { from: string; to: string } {
-  const from = new Date();
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(from);
-  to.setDate(to.getDate() + 1);
-  return { from: from.toISOString(), to: to.toISOString() };
+function taskDateTime(dueDate: string, dueTime: string): Date | null {
+  const datePart = dueDateKey(dueDate);
+  const timePart = dueTime.length >= 5 ? dueTime.slice(0, 5) : dueTime;
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [hh, mm] = timePart.split(':').map(Number);
+  if ([y, m, d, hh, mm].some((n) => Number.isNaN(n))) {
+    return null;
+  }
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
-function lastSevenDaysWindow(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date();
-  from.setHours(0, 0, 0, 0);
-  from.setDate(from.getDate() - 7);
-  return { from: from.toISOString(), to: to.toISOString() };
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatTimeRange(start: Date, end: Date): string {
+  return `${formatTime(start)} – ${formatTime(end)}`;
+}
+
+function parseTime(value: string): number {
+  const match = value.match(/(\d+):(\d+)/);
+  if (!match) {
+    return 0;
+  }
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const isPm = value.toLowerCase().includes('pm');
+  const isAm = value.toLowerCase().includes('am');
+  let h = hours;
+  if (isPm && h < 12) {
+    h += 12;
+  }
+  if (isAm && h === 12) {
+    h = 0;
+  }
+  return h * 60 + minutes;
+}
+
+function relativeDueLabel(dueDate: string): string {
+  const today = toDateKey(new Date());
+  if (dueDate === today) {
+    return 'Today';
+  }
+  const due = new Date(`${dueDate}T12:00:00`);
+  const now = new Date();
+  now.setHours(12, 0, 0, 0);
+  const days = Math.round((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (days === 1) {
+    return 'Tomorrow';
+  }
+  return due.toLocaleDateString(undefined, { weekday: 'long' });
 }

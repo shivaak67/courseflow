@@ -69,4 +69,18 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, UUID> {
             @Param("from") Instant from,
             @Param("to") Instant to,
             Pageable pageable);
+
+    @Query("""
+            SELECT COALESCE(c.name, 'Uncategorized'), SUM(e.durationMinutes)
+            FROM TimeEntry e
+            JOIN Task t ON e.taskId = t.id
+            LEFT JOIN Category c ON t.categoryId = c.id
+            WHERE e.userId = :userId
+              AND e.createdAt >= :from
+              AND e.createdAt < :to
+            GROUP BY COALESCE(c.name, 'Uncategorized')
+            ORDER BY SUM(e.durationMinutes) DESC
+            """)
+    List<Object[]> findTopCategoriesByMinutesInWindow(
+            @Param("userId") UUID userId, @Param("from") Instant from, @Param("to") Instant to);
 }

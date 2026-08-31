@@ -123,9 +123,13 @@ public class ReminderService {
     }
 
     private static void validateChannelSupported(NotificationChannel channel) {
-        if (channel == null || channel == NotificationChannel.IN_APP) {
-            return;
+        NotificationChannel resolved = channel != null ? channel : NotificationChannel.EMAIL;
+        if (resolved != NotificationChannel.EMAIL && resolved != NotificationChannel.SMS) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only EMAIL and SMS reminders are supported");
         }
-        throw new ApiException(HttpStatus.BAD_REQUEST, channel.name() + " reminders are not supported");
+    }
+
+    static void validateChannelSupportedOrThrow(NotificationChannel channel) {
+        validateChannelSupported(channel);
     }
 }

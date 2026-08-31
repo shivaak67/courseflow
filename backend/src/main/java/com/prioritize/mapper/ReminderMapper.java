@@ -31,7 +31,7 @@ public class ReminderMapper {
         reminder.setRelatedEntityType(request.relatedEntityType());
         reminder.setRelatedEntityId(request.relatedEntityId());
         reminder.setReminderAt(request.reminderAt());
-        reminder.setChannel(request.channel() != null ? request.channel() : NotificationChannel.IN_APP);
+        reminder.setChannel(request.channel() != null ? request.channel() : NotificationChannel.EMAIL);
         reminder.setStatus(ReminderStatus.PENDING);
         reminder.setAttemptCount(0);
         reminder.setSentAt(null);

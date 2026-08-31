@@ -14,6 +14,11 @@ public record InsightsSummaryResponse(
         int totalMinutesLogged,
         int estimatedMinutesOpen,
         double completionRate,
+        int weeklyTasksDue,
+        int weeklyTasksCompleted,
+        int focusStreakDays,
+        String mostProductiveDay,
+        String topCategoryName,
         List<MinutesByDay> minutesByDay,
         List<TaskMinutes> topTasksByMinutes) {
 

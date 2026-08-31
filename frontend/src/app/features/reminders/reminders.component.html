@@ -1,0 +1,135 @@
+<section class="page prio-page">
+  <header class="page__header">
+    <div>
+      <p class="prio-kicker">Notifications</p>
+      <h1 class="prio-title">Reminders</h1>
+      <p class="prio-lede">
+        A centralized place to manage email and SMS notifications for upcoming events and tasks.
+      </p>
+    </div>
+    <div class="page__actions">
+      <a mat-stroked-button routerLink="/settings">
+        <mat-icon>settings</mat-icon>
+        Settings
+      </a>
+      <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Reload
+      </button>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="reminders__banner" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="reminders__note"><mat-icon>hourglass_top</mat-icon> Loading reminders…</p>
+  } @else {
+    <section class="reminders__block prio-panel">
+      <h2 class="reminders__heading">Schedule reminders</h2>
+      <p class="reminders__lede">Pick an event or task, choose when to be notified, and select email and/or SMS.</p>
+
+      <form class="reminders__form" [formGroup]="scheduleForm" (ngSubmit)="scheduleReminders()">
+        <label class="crud__field">
+          <span>Type</span>
+          <select formControlName="entityKind" (change)="onEntityKindChange()">
+            <option value="CALENDAR_EVENT">Calendar event</option>
+            <option value="TASK">Task with due date</option>
+          </select>
+        </label>
+
+        <label class="crud__field">
+          <span>Item</span>
+          <select formControlName="entityId">
+            <option value="" disabled>Select an item</option>
+            @if (scheduleForm.controls.entityKind.value === 'CALENDAR_EVENT') {
+              @for (event of upcomingEvents(); track event.id) {
+                <option [value]="event.id">{{ event.title }}</option>
+              }
+            } @else {
+              @for (task of schedulableTasks(); track task.id) {
+                <option [value]="task.id">{{ task.title }}</option>
+              }
+            }
+          </select>
+        </label>
+
+        <div class="reminders__offsets">
+          <span class="crud__field-label">Notify me</span>
+          <div class="reminders__offset-grid">
+            @for (option of offsetOptions; track option.minutes) {
+              <button
+                type="button"
+                class="reminders__offset"
+                [class.reminders__offset--active]="isOffsetSelected(option.minutes)"
+                (click)="toggleOffset(option.minutes)"
+              >
+                <mat-icon>notifications</mat-icon>
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="reminders__channels">
+          <span class="crud__field-label">Channels</span>
+          <label class="reminders__channel">
+            <input type="checkbox" formControlName="emailEnabled" />
+            <span>Email</span>
+          </label>
+          <label class="reminders__channel">
+            <input type="checkbox" formControlName="smsEnabled" />
+            <span>SMS</span>
+          </label>
+        </div>
+
+        <div class="reminders__actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+            <mat-icon>notifications_active</mat-icon>
+            {{ saving() ? 'Scheduling…' : 'Schedule reminders' }}
+          </button>
+          @if (saved()) {
+            <span class="reminders__saved"><mat-icon>check_circle</mat-icon> Scheduled</span>
+          }
+        </div>
+      </form>
+    </section>
+
+    <section class="reminders__block prio-panel">
+      <h2 class="reminders__heading">Upcoming reminders</h2>
+
+      @if (reminderGroups().length === 0) {
+        <div class="prio-empty">
+          <div class="prio-empty__mark"><mat-icon>notifications_none</mat-icon></div>
+          <h3>No pending reminders</h3>
+          <p>Schedule email or SMS nudges for an event or task above.</p>
+        </div>
+      } @else {
+        <ul class="reminders__groups">
+          @for (group of reminderGroups(); track group.key) {
+            <li class="reminders__group">
+              <div class="reminders__group-head">
+                <strong>{{ group.title }}</strong>
+                <span>{{ group.eventAtLabel }}</span>
+              </div>
+              <ul class="reminders__group-list">
+                @for (reminder of group.reminders; track reminder.id) {
+                  <li class="reminders__group-item">
+                    <div>
+                      <mat-icon>notifications</mat-icon>
+                      <span>{{ offsetLabel(reminder) }} · {{ channelLabel(reminder.channel) }}</span>
+                    </div>
+                    <button mat-stroked-button type="button" (click)="cancelReminder(reminder)">
+                      Cancel
+                    </button>
+                  </li>
+                }
+              </ul>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</section>

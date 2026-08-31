@@ -75,6 +75,9 @@ class InsightsServiceTest {
                 .thenReturn(List.of(
                         new Object[] {taskA, "Essay", 100L},
                         new Object[] {taskB, "Lab", 50L}));
+        when(timeEntryRepository.findTopCategoriesByMinutesInWindow(USER_ID, FROM, TO))
+                .thenReturn(List.<Object[]>of(new Object[] {"Computer Org", 120L}));
+        when(taskRepository.findFiltered(USER_ID, null, null, null)).thenReturn(List.of());
 
         InsightsSummaryResponse summary = insightsService.summary(USER_ID, FROM, TO);
 
@@ -86,6 +89,11 @@ class InsightsServiceTest {
         assertThat(summary.totalMinutesLogged()).isEqualTo(150);
         assertThat(summary.estimatedMinutesOpen()).isEqualTo(90);
         assertThat(summary.completionRate()).isEqualTo(0.5);
+        assertThat(summary.weeklyTasksDue()).isZero();
+        assertThat(summary.weeklyTasksCompleted()).isZero();
+        assertThat(summary.focusStreakDays()).isZero();
+        assertThat(summary.mostProductiveDay()).isEqualTo("Monday");
+        assertThat(summary.topCategoryName()).isEqualTo("Computer Org");
         assertThat(summary.minutesByDay())
                 .containsExactly(
                         new InsightsSummaryResponse.MinutesByDay(LocalDate.of(2026, 1, 2), 60),
@@ -181,5 +189,8 @@ class InsightsServiceTest {
         when(timeEntryRepository.findTopTasksByMinutesInWindow(
                         eq(USER_ID), eq(from), eq(to), any(Pageable.class)))
                 .thenReturn(List.of());
+        when(timeEntryRepository.findTopCategoriesByMinutesInWindow(USER_ID, from, to))
+                .thenReturn(List.of());
+        when(taskRepository.findFiltered(USER_ID, null, null, null)).thenReturn(List.of());
     }
 }

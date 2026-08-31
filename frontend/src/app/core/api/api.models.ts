@@ -251,7 +251,7 @@ export type ReminderEntityType =
   | 'CALENDAR_EVENT'
   | 'GOAL';
 
-export type NotificationChannel = 'IN_APP' | 'EMAIL';
+export type NotificationChannel = 'EMAIL' | 'SMS';
 
 export type ReminderStatus =
   | 'PENDING'
@@ -272,6 +272,30 @@ export interface ReminderDto {
   failureReason: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReminderScheduleRequest {
+  relatedEntityType: ReminderEntityType;
+  relatedEntityId: string;
+  offsetMinutes: number[];
+  channels: NotificationChannel[];
+}
+
+export interface ReminderScheduleResponse {
+  reminders: ReminderDto[];
+}
+
+export interface PhoneStatusDto {
+  phoneNumber: string | null;
+  phoneVerified: boolean;
+}
+
+export interface PhoneUpdateRequest {
+  phoneNumber: string;
+}
+
+export interface PhoneVerifyRequest {
+  code: string;
 }
 
 export interface CreateReminderRequest {
@@ -384,6 +408,35 @@ export interface InsightsSummary {
   totalMinutesLogged: number;
   estimatedMinutesOpen: number;
   completionRate: number;
+  weeklyTasksDue: number;
+  weeklyTasksCompleted: number;
+  focusStreakDays: number;
+  mostProductiveDay: string | null;
+  topCategoryName: string | null;
   minutesByDay: MinutesByDay[];
   topTasksByMinutes: TopTaskByMinutes[];
+}
+
+/** AI assistant */
+
+export interface AssistantMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AssistantChatRequest {
+  message: string;
+  history?: AssistantMessage[];
+}
+
+export interface AssistantChatResponse {
+  reply: string;
+  enabled: boolean;
+}
+
+export interface AssistantStatusResponse {
+  configured: boolean;
+  ready: boolean;
+  warming: boolean;
+  message: string;
 }

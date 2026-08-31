@@ -22,6 +22,12 @@ public interface ReminderRepository extends JpaRepository<Reminder, UUID> {
 
     List<Reminder> findByUserIdAndStatusOrderByReminderAtDesc(UUID userId, ReminderStatus status);
 
+    List<Reminder> findByUserIdAndRelatedEntityTypeAndRelatedEntityIdAndStatus(
+            UUID userId,
+            com.prioritize.model.ReminderEntityType relatedEntityType,
+            UUID relatedEntityId,
+            ReminderStatus status);
+
     @Query("""
             SELECT r FROM Reminder r
             WHERE r.status = com.prioritize.model.ReminderStatus.PENDING

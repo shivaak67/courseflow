@@ -3,6 +3,17 @@ spring:
     name: prioritize-backend
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
   security:
     oauth2:
       client:
@@ -37,3 +48,19 @@ app:
     success-redirect: ${APP_OAUTH_SUCCESS_REDIRECT:http://localhost:4200/auth/callback}
     google:
       enabled: ${GOOGLE_OAUTH_ENABLED:false}
+  ai:
+    enabled: ${AI_ENABLED:false}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:gpt-4o-mini}
+    base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+    warmup-enabled: ${AI_WARMUP_ENABLED:true}
+    keep-alive: ${AI_KEEP_ALIVE:30m}
+  notifications:
+    email:
+      enabled: ${NOTIFICATIONS_EMAIL_ENABLED:false}
+      from: ${NOTIFICATIONS_EMAIL_FROM:noreply@prioritize.app}
+    sms:
+      enabled: ${NOTIFICATIONS_SMS_ENABLED:false}
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from-number: ${TWILIO_FROM_NUMBER:}

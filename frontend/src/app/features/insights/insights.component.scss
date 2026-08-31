@@ -54,48 +54,39 @@
   color: var(--prio-teal);
 }
 
-.insights__metrics {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.9rem;
+.insights__week {
   margin-bottom: 1rem;
+  padding: 1.2rem 1.25rem;
 }
 
-.metric {
-  padding: 1rem 1.05rem;
-  border: 1px solid var(--prio-line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  transition: transform 0.3s var(--prio-ease), box-shadow 0.3s var(--prio-ease);
-}
-
-.metric:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--prio-shadow);
-}
-
-.metric__label {
-  margin: 0;
-  color: var(--prio-ink-soft);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.metric__value {
-  margin: 0.45rem 0 0;
+.insights__week h2 {
+  margin: 0 0 1rem;
   font-family: var(--prio-font-display);
-  font-size: 2rem;
-  line-height: 1;
-  letter-spacing: -0.03em;
+  font-size: 1.35rem;
 }
 
-.metric__hint {
-  margin: 0.55rem 0 0;
+.insights__stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.insights__stats li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.insights__stats strong {
+  font-family: var(--prio-font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.insights__stats span {
   color: var(--prio-ink-soft);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
 }
 
 .insights__columns {
@@ -122,7 +113,7 @@
 .surface__head h2 {
   margin: 0;
   font-family: var(--prio-font-display);
-  font-size: 1.35rem;
+  font-size: 1.2rem;
 }
 
 .surface__head span {
@@ -177,19 +168,9 @@
   line-height: 1.5;
 }
 
-@media (max-width: 1100px) {
-  .insights__metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 860px) {
   .insights__columns {
     grid-template-columns: 1fr;
-  }
-
-  .insights__metrics {
-    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -197,9 +178,5 @@
   .page__header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .insights__metrics {
-    grid-template-columns: 1fr;
   }
 }

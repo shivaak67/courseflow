@@ -21,7 +21,7 @@ import com.prioritize.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties(OAuthProperties.class)
+@EnableConfigurationProperties({OAuthProperties.class, AiProperties.class, NotificationProperties.class})
 public class SecurityConfig {
 
     @Bean

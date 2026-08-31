@@ -39,6 +39,12 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       APP_OAUTH_SUCCESS_REDIRECT: ${APP_OAUTH_SUCCESS_REDIRECT:-http://localhost:4200/auth/callback}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_WARMUP_ENABLED: ${AI_WARMUP_ENABLED:-true}
+      AI_KEEP_ALIVE: ${AI_KEEP_ALIVE:-30m}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s

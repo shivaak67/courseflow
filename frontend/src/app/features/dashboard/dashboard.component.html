@@ -1,35 +1,11 @@
-<section class="page prio-page">
-  <header class="page__header">
+<section class="page prio-page dash">
+  <header class="dash__hero">
     <div>
-      <p class="prio-kicker">Overview</p>
-      <h1 class="prio-title">Dashboard</h1>
-      <p class="prio-lede">
-        @if (loading()) {
-          Loading your planning snapshot…
-        } @else if (unreadCount() > 0) {
-          {{ unreadCount() }} unread
-          {{ unreadCount() === 1 ? 'notification' : 'notifications' }} — plus what’s due and scheduled today.
-        } @else {
-          A calm snapshot of what is due, scheduled, and ready for attention.
-        }
-      </p>
+      <h1>{{ greeting() }}, {{ userName() }} 👋</h1>
+      <p>{{ dateLabel() }}</p>
     </div>
-    <div class="page__actions">
-      @if (unreadCount() > 0) {
-        <a mat-stroked-button routerLink="/notifications" class="page__cta page__cta--badge">
-          <mat-icon>notifications</mat-icon>
-          Inbox
-          <span class="dash__badge">{{ unreadCount() }}</span>
-        </a>
-      }
-      <a mat-stroked-button routerLink="/schedule" class="page__cta">
-        <mat-icon>calendar_month</mat-icon>
-        Schedule
-      </a>
-      <a mat-flat-button color="primary" routerLink="/tasks" class="page__cta">
-        <mat-icon>checklist</mat-icon>
-        Open tasks
-      </a>
+    <div class="dash__hero-actions">
+      <a mat-stroked-button routerLink="/today">Today timeline</a>
       <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
         <mat-icon>refresh</mat-icon>
         Reload
@@ -41,119 +17,78 @@
     <p class="dash__banner dash__banner--error" role="alert">{{ message }}</p>
   }
 
-  <div class="dash__metrics">
-    @for (item of metrics(); track item.label) {
-      <article class="metric" [class.metric--warn]="item.tone === 'warn'" [class.metric--accent]="item.tone === 'accent'">
-        <p class="metric__label">{{ item.label }}</p>
-        <p class="metric__value">{{ item.value }}</p>
-        <p class="metric__hint">{{ item.hint }}</p>
+  <div class="dash__stats">
+    @for (stat of stats(); track stat.label) {
+      <article class="dash__stat">
+        <p class="dash__stat-value">{{ loading() ? '—' : stat.value }}</p>
+        <p class="dash__stat-label">{{ stat.label }}</p>
       </article>
     }
   </div>
 
-  <div class="dash__columns">
-    <article class="surface">
-      <div class="surface__head">
-        <h2>Upcoming focus</h2>
-        <a routerLink="/tasks">All tasks</a>
-      </div>
-
+  <div class="dash__grid">
+    <section class="dash__panel">
+      <h2>Today's plan</h2>
       @if (loading()) {
-        <p class="surface__note">Loading tasks…</p>
-      } @else if (focusItems().length === 0) {
-        <div class="prio-empty">
-          <div class="prio-empty__mark"><mat-icon>event_upcoming</mat-icon></div>
-          <h3>No open tasks yet</h3>
-          <p>Add tasks from the Tasks page to see what needs attention here.</p>
-        </div>
+        <p class="dash__muted">Loading…</p>
+      } @else if (todayPlan().length === 0) {
+        <p class="dash__muted">Nothing scheduled for today yet.</p>
+        <a routerLink="/calendar">Add calendar events</a>
       } @else {
-        <ul class="focus-list">
-          @for (item of focusItems(); track item.id) {
-            <li>
-              <div class="focus-list__body">
-                <strong>{{ item.title }}</strong>
-                <p>{{ item.status }} · {{ dueLabel(item.dueDate) }}</p>
-              </div>
-              <div class="focus-list__actions">
-                <span class="queue__level" [attr.data-level]="item.priority">
-                  {{ item.priority }}
-                </span>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  (click)="markComplete(item)"
-                  [disabled]="completingId() === item.id"
-                >
-                  <mat-icon>check_circle</mat-icon>
-                  Done
-                </button>
-              </div>
-            </li>
-          }
-        </ul>
-      }
-    </article>
-
-    <article class="surface">
-      <div class="surface__head">
-        <h2>Today’s schedule</h2>
-        <a routerLink="/schedule">Full week</a>
-      </div>
-
-      @if (loading()) {
-        <p class="surface__note">Loading schedule…</p>
-      } @else if (todayBlocks().length === 0) {
-        <div class="prio-empty">
-          <div class="prio-empty__mark"><mat-icon>schedule</mat-icon></div>
-          <h3>Nothing scheduled today</h3>
-          <p>Block time on the Schedule page to plan focused work.</p>
-        </div>
-      } @else {
-        <ul class="schedule-list">
-          @for (block of todayBlocks(); track block.id) {
-            <li [class.schedule-list__item--done]="block.completed">
+        <ul class="dash__plan">
+          @for (item of todayPlan(); track item.id) {
+            <li [class.dash__plan-item--event]="item.kind === 'event'">
+              <span class="dash__plan-time">
+                <span>{{ item.time }}</span>
+                @if (item.endTime) {
+                  <span class="dash__plan-time-end">– {{ item.endTime }}</span>
+                }
+              </span>
               <div>
-                <strong>{{ blockTitle(block) }}</strong>
-                <p>{{ formatBlockTime(block) }}</p>
+                <strong>{{ item.title }}</strong>
+                @if (item.subtitle) {
+                  <p>{{ item.subtitle }}</p>
+                }
               </div>
-              @if (block.completed) {
-                <span class="schedule-list__done">Done</span>
-              }
             </li>
           }
         </ul>
       }
-    </article>
+    </section>
+
+    <section class="dash__panel">
+      <h2>Weekly progress</h2>
+      @if (loading()) {
+        <p class="dash__muted">Loading…</p>
+      } @else {
+        <p class="dash__progress-label">
+          {{ weeklyProgress().done }} / {{ weeklyProgress().total }} tasks
+        </p>
+        <div class="dash__progress-bar" aria-hidden="true">
+          @for (filled of progressSegments(); track $index) {
+            <span [class.dash__progress-seg--filled]="filled"></span>
+          }
+        </div>
+        <p class="dash__progress-percent">{{ weeklyProgress().percent }}%</p>
+      }
+    </section>
   </div>
 
-  <article class="surface dash__workload">
-    <div class="surface__head">
-      <h2>Workload by project</h2>
-      <a routerLink="/insights">Insights</a>
-    </div>
-
+  <section class="dash__panel dash__panel--deadlines">
+    <h2>Upcoming deadlines</h2>
     @if (loading()) {
-      <p class="surface__note">Loading workload…</p>
-    } @else if (workload().length === 0) {
-      <div class="prio-empty">
-        <div class="prio-empty__mark"><mat-icon>folder_open</mat-icon></div>
-        <h3>No project workload yet</h3>
-        <p>Assign open tasks to projects to see estimated hours here.</p>
-      </div>
+      <p class="dash__muted">Loading…</p>
+    } @else if (upcomingDeadlines().length === 0) {
+      <p class="dash__muted">No tasks or events this week.</p>
     } @else {
-      <ul class="workload-list">
-        @for (item of workload(); track item.projectId) {
+      <ul class="dash__deadlines">
+        @for (item of upcomingDeadlines(); track item.id) {
           <li>
-            <div class="workload-list__meta">
-              <strong>{{ item.projectName }}</strong>
-              <span>{{ item.taskCount }} tasks · {{ item.estimatedHours }}h est.</span>
-            </div>
-            <div class="workload-list__bar" aria-hidden="true">
-              <span [style.width.%]="workloadBarWidth(item.estimatedHours)"></span>
-            </div>
+            <span>{{ item.title }}</span>
+            <strong>{{ item.when }}</strong>
           </li>
         }
       </ul>
     }
-  </article>
+  </section>
 </section>

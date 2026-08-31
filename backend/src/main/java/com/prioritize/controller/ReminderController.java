@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.prioritize.dto.ReminderRequest;
 import com.prioritize.dto.ReminderResponse;
+import com.prioritize.dto.ReminderScheduleRequest;
+import com.prioritize.dto.ReminderScheduleResponse;
 import com.prioritize.dto.ReminderUpdateRequest;
 import com.prioritize.model.ReminderStatus;
 import com.prioritize.security.CurrentUserService;
+import com.prioritize.service.ReminderScheduleService;
 import com.prioritize.service.ReminderService;
 
 import jakarta.validation.Valid;
@@ -29,10 +32,15 @@ import jakarta.validation.Valid;
 public class ReminderController {
 
     private final ReminderService reminderService;
+    private final ReminderScheduleService reminderScheduleService;
     private final CurrentUserService currentUserService;
 
-    public ReminderController(ReminderService reminderService, CurrentUserService currentUserService) {
+    public ReminderController(
+            ReminderService reminderService,
+            ReminderScheduleService reminderScheduleService,
+            CurrentUserService currentUserService) {
         this.reminderService = reminderService;
+        this.reminderScheduleService = reminderScheduleService;
         this.currentUserService = currentUserService;
     }
 
@@ -46,6 +54,13 @@ public class ReminderController {
     public ResponseEntity<ReminderResponse> create(@Valid @RequestBody ReminderRequest request) {
         UUID userId = currentUserService.requireCurrentUserId();
         ReminderResponse created = reminderService.create(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PostMapping("/schedule")
+    public ResponseEntity<ReminderScheduleResponse> schedule(@Valid @RequestBody ReminderScheduleRequest request) {
+        UUID userId = currentUserService.requireCurrentUserId();
+        ReminderScheduleResponse created = reminderScheduleService.schedule(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

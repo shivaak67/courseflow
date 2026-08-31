@@ -15,6 +15,8 @@ public final class UserMapper {
                 user.getLastName(),
                 user.getEmail(),
                 user.getAuthProvider(),
-                user.getRole());
+                user.getRole(),
+                user.getPhoneNumber(),
+                user.isPhoneVerified());
     }
 }

@@ -18,9 +18,12 @@ import com.prioritize.model.NotificationChannel;
 import com.prioritize.model.NotificationSettings;
 import com.prioritize.model.Reminder;
 import com.prioritize.model.ReminderStatus;
+import com.prioritize.model.User;
 import com.prioritize.repository.AppNotificationRepository;
 import com.prioritize.repository.NotificationSettingsRepository;
 import com.prioritize.repository.ReminderRepository;
+import com.prioritize.repository.UserRepository;
+import com.prioritize.service.ReminderContentResolver.ReminderContent;
 
 @Service
 public class ReminderDispatchService {
@@ -31,6 +34,10 @@ public class ReminderDispatchService {
     private final ReminderRepository reminderRepository;
     private final AppNotificationRepository appNotificationRepository;
     private final NotificationSettingsRepository notificationSettingsRepository;
+    private final UserRepository userRepository;
+    private final ReminderContentResolver reminderContentResolver;
+    private final EmailNotificationService emailNotificationService;
+    private final SmsNotificationService smsNotificationService;
     private final Clock clock;
     private final TransactionTemplate transactionTemplate;
 
@@ -38,11 +45,19 @@ public class ReminderDispatchService {
             ReminderRepository reminderRepository,
             AppNotificationRepository appNotificationRepository,
             NotificationSettingsRepository notificationSettingsRepository,
+            UserRepository userRepository,
+            ReminderContentResolver reminderContentResolver,
+            EmailNotificationService emailNotificationService,
+            SmsNotificationService smsNotificationService,
             Clock clock,
             PlatformTransactionManager transactionManager) {
         this.reminderRepository = reminderRepository;
         this.appNotificationRepository = appNotificationRepository;
         this.notificationSettingsRepository = notificationSettingsRepository;
+        this.userRepository = userRepository;
+        this.reminderContentResolver = reminderContentResolver;
+        this.emailNotificationService = emailNotificationService;
+        this.smsNotificationService = smsNotificationService;
         this.clock = clock;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
@@ -91,29 +106,59 @@ public class ReminderDispatchService {
     }
 
     private void deliver(Reminder reminder) {
+        NotificationSettings settings = notificationSettingsRepository.findById(reminder.getUserId())
+                .orElseGet(() -> {
+                    NotificationSettings defaults = new NotificationSettings();
+                    defaults.setUserId(reminder.getUserId());
+                    defaults.setEmailEnabled(false);
+                    defaults.setSmsEnabled(false);
+                    defaults.setInAppEnabled(true);
+                    return defaults;
+                });
+
+        User user = userRepository.findById(reminder.getUserId())
+                .orElseThrow(() -> new DeliveryException("User not found"));
+
+        ReminderContent content = reminderContentResolver.resolve(
+                reminder.getUserId(),
+                reminder.getRelatedEntityType(),
+                reminder.getRelatedEntityId());
+
+        String subject = "Reminder: " + content.title();
+        String body = content.title() + "\n" + content.eventAtLabel();
+
         NotificationChannel channel = reminder.getChannel();
-        if (channel == NotificationChannel.SMS || channel == NotificationChannel.EMAIL) {
-            throw new DeliveryException(channel.name() + " not supported");
+        if (channel == NotificationChannel.EMAIL) {
+            if (!settings.isEmailEnabled()) {
+                throw new DeliveryException("email disabled");
+            }
+            emailNotificationService.send(user.getEmail(), subject, body);
+            return;
         }
-        if (channel != NotificationChannel.IN_APP) {
-            throw new DeliveryException("Unsupported channel");
+        if (channel == NotificationChannel.SMS) {
+            if (!settings.isSmsEnabled()) {
+                throw new DeliveryException("SMS disabled");
+            }
+            if (!user.isPhoneVerified() || user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+                throw new DeliveryException("phone not verified");
+            }
+            smsNotificationService.send(user.getPhoneNumber(), "Prioritize: " + content.title() + " — " + content.eventAtLabel());
+            return;
         }
-
-        boolean inAppEnabled = notificationSettingsRepository.findById(reminder.getUserId())
-                .map(NotificationSettings::isInAppEnabled)
-                .orElse(true);
-        if (!inAppEnabled) {
-            throw new DeliveryException("in-app disabled");
+        if (channel == NotificationChannel.IN_APP) {
+            if (!settings.isInAppEnabled()) {
+                throw new DeliveryException("in-app disabled");
+            }
+            AppNotification notification = new AppNotification();
+            notification.setUserId(reminder.getUserId());
+            notification.setTitle("Reminder");
+            notification.setBody(content.title() + " · " + content.eventAtLabel());
+            notification.setRelatedEntityType(reminder.getRelatedEntityType().name());
+            notification.setRelatedEntityId(reminder.getRelatedEntityId());
+            appNotificationRepository.save(notification);
+            return;
         }
-
-        AppNotification notification = new AppNotification();
-        notification.setUserId(reminder.getUserId());
-        notification.setTitle("Reminder");
-        notification.setBody("Reminder for " + reminder.getRelatedEntityType().name()
-                + " " + reminder.getRelatedEntityId());
-        notification.setRelatedEntityType(reminder.getRelatedEntityType().name());
-        notification.setRelatedEntityId(reminder.getRelatedEntityId());
-        appNotificationRepository.save(notification);
+        throw new DeliveryException("Unsupported channel");
     }
 
     private static String trimReason(String message) {

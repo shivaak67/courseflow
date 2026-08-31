@@ -23,6 +23,16 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'privacy',
+    loadComponent: () =>
+      import('./features/legal/privacy.component').then((m) => m.PrivacyComponent),
+  },
+  {
+    path: 'terms',
+    loadComponent: () =>
+      import('./features/legal/terms.component').then((m) => m.TermsComponent),
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],
@@ -37,48 +47,16 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'today',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/today/today.component').then((m) => m.TodayComponent),
+      },
+      {
         path: 'tasks',
         canActivate: [authGuard],
         loadComponent: () =>
           import('./features/tasks/tasks.component').then((m) => m.TasksComponent),
-      },
-      {
-        path: 'schedule',
-        canActivate: [authGuard],
-        loadComponent: () =>
-          import('./features/schedule/schedule.component').then(
-            (m) => m.ScheduleComponent,
-          ),
-      },
-      {
-        path: 'routines',
-        canActivate: [authGuard],
-        loadComponent: () =>
-          import('./features/routines/routines.component').then(
-            (m) => m.RoutinesComponent,
-          ),
-      },
-      {
-        path: 'goals',
-        canActivate: [authGuard],
-        loadComponent: () =>
-          import('./features/goals/goals.component').then((m) => m.GoalsComponent),
-      },
-      {
-        path: 'projects',
-        canActivate: [authGuard],
-        loadComponent: () =>
-          import('./features/projects/projects.component').then(
-            (m) => m.ProjectsComponent,
-          ),
-      },
-      {
-        path: 'categories',
-        canActivate: [authGuard],
-        loadComponent: () =>
-          import('./features/categories/categories.component').then(
-            (m) => m.CategoriesComponent,
-          ),
       },
       {
         path: 'calendar',
@@ -86,6 +64,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/calendar/calendar.component').then(
             (m) => m.CalendarComponent,
+          ),
+      },
+      {
+        path: 'focus',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/focus/focus.component').then((m) => m.FocusComponent),
+      },
+      {
+        path: 'assistant',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/assistant/assistant.component').then(
+            (m) => m.AssistantComponent,
           ),
       },
       {
@@ -97,11 +89,11 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'notifications',
+        path: 'reminders',
         canActivate: [authGuard],
         loadComponent: () =>
-          import('./features/notifications/notifications.component').then(
-            (m) => m.NotificationsComponent,
+          import('./features/reminders/reminders.component').then(
+            (m) => m.RemindersComponent,
           ),
       },
       {
