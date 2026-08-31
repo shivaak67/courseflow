@@ -7,6 +7,7 @@ import {
   CategoryDto,
   CreateCalendarEventRequest,
   CreateCategoryRequest,
+  DashboardSummary,
   CreateGoalRequest,
   CreateProjectRequest,
   CreateReminderRequest,
@@ -249,6 +250,12 @@ export class ApiService {
 
   deleteTimeEntry(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/api/time-entries/${id}`);
+  }
+
+  // --- Dashboard ---
+
+  getDashboardSummary(): Observable<DashboardSummary> {
+    return this.http.get<DashboardSummary>(`${this.base}/api/dashboard/summary`);
   }
 
   // --- Insights ---

@@ -4,14 +4,36 @@
       <p class="prio-kicker">Overview</p>
       <h1 class="prio-title">Dashboard</h1>
       <p class="prio-lede">
-        A calm snapshot of what is due, overdue, and ready for attention this week.
+        @if (loading()) {
+          Loading your planning snapshot…
+        } @else if (unreadCount() > 0) {
+          {{ unreadCount() }} unread
+          {{ unreadCount() === 1 ? 'notification' : 'notifications' }} — plus what’s due and scheduled today.
+        } @else {
+          A calm snapshot of what is due, scheduled, and ready for attention.
+        }
       </p>
     </div>
     <div class="page__actions">
+      @if (unreadCount() > 0) {
+        <a mat-stroked-button routerLink="/notifications" class="page__cta page__cta--badge">
+          <mat-icon>notifications</mat-icon>
+          Inbox
+          <span class="dash__badge">{{ unreadCount() }}</span>
+        </a>
+      }
+      <a mat-stroked-button routerLink="/schedule" class="page__cta">
+        <mat-icon>calendar_month</mat-icon>
+        Schedule
+      </a>
       <a mat-flat-button color="primary" routerLink="/tasks" class="page__cta">
         <mat-icon>checklist</mat-icon>
         Open tasks
       </a>
+      <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Reload
+      </button>
     </div>
   </header>
 
@@ -21,7 +43,7 @@
 
   <div class="dash__metrics">
     @for (item of metrics(); track item.label) {
-      <article class="metric">
+      <article class="metric" [class.metric--warn]="item.tone === 'warn'" [class.metric--accent]="item.tone === 'accent'">
         <p class="metric__label">{{ item.label }}</p>
         <p class="metric__value">{{ item.value }}</p>
         <p class="metric__hint">{{ item.hint }}</p>
@@ -29,31 +51,106 @@
     }
   </div>
 
-  <article class="surface">
+  <div class="dash__columns">
+    <article class="surface">
+      <div class="surface__head">
+        <h2>Upcoming focus</h2>
+        <a routerLink="/tasks">All tasks</a>
+      </div>
+
+      @if (loading()) {
+        <p class="surface__note">Loading tasks…</p>
+      } @else if (focusItems().length === 0) {
+        <div class="prio-empty">
+          <div class="prio-empty__mark"><mat-icon>event_upcoming</mat-icon></div>
+          <h3>No open tasks yet</h3>
+          <p>Add tasks from the Tasks page to see what needs attention here.</p>
+        </div>
+      } @else {
+        <ul class="focus-list">
+          @for (item of focusItems(); track item.id) {
+            <li>
+              <div class="focus-list__body">
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.status }} · {{ dueLabel(item.dueDate) }}</p>
+              </div>
+              <div class="focus-list__actions">
+                <span class="queue__level" [attr.data-level]="item.priority">
+                  {{ item.priority }}
+                </span>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  (click)="markComplete(item)"
+                  [disabled]="completingId() === item.id"
+                >
+                  <mat-icon>check_circle</mat-icon>
+                  Done
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="surface">
+      <div class="surface__head">
+        <h2>Today’s schedule</h2>
+        <a routerLink="/schedule">Full week</a>
+      </div>
+
+      @if (loading()) {
+        <p class="surface__note">Loading schedule…</p>
+      } @else if (todayBlocks().length === 0) {
+        <div class="prio-empty">
+          <div class="prio-empty__mark"><mat-icon>schedule</mat-icon></div>
+          <h3>Nothing scheduled today</h3>
+          <p>Block time on the Schedule page to plan focused work.</p>
+        </div>
+      } @else {
+        <ul class="schedule-list">
+          @for (block of todayBlocks(); track block.id) {
+            <li [class.schedule-list__item--done]="block.completed">
+              <div>
+                <strong>{{ blockTitle(block) }}</strong>
+                <p>{{ formatBlockTime(block) }}</p>
+              </div>
+              @if (block.completed) {
+                <span class="schedule-list__done">Done</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </article>
+  </div>
+
+  <article class="surface dash__workload">
     <div class="surface__head">
-      <h2>Upcoming focus</h2>
-      <span>Open tasks</span>
+      <h2>Workload by project</h2>
+      <a routerLink="/insights">Insights</a>
     </div>
 
     @if (loading()) {
-      <p class="surface__note">Loading tasks…</p>
-    } @else if (focusItems().length === 0) {
+      <p class="surface__note">Loading workload…</p>
+    } @else if (workload().length === 0) {
       <div class="prio-empty">
-        <div class="prio-empty__mark"><mat-icon>event_upcoming</mat-icon></div>
-        <h3>No open tasks yet</h3>
-        <p>Add tasks from the Tasks page to see what needs attention here.</p>
+        <div class="prio-empty__mark"><mat-icon>folder_open</mat-icon></div>
+        <h3>No project workload yet</h3>
+        <p>Assign open tasks to projects to see estimated hours here.</p>
       </div>
     } @else {
-      <ul class="focus-list">
-        @for (item of focusItems(); track item.id) {
+      <ul class="workload-list">
+        @for (item of workload(); track item.projectId) {
           <li>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.status }} · {{ dueLabel(item.dueDate) }}</p>
+            <div class="workload-list__meta">
+              <strong>{{ item.projectName }}</strong>
+              <span>{{ item.taskCount }} tasks · {{ item.estimatedHours }}h est.</span>
             </div>
-            <span class="queue__level" [attr.data-level]="item.priority">
-              {{ item.priority }}
-            </span>
+            <div class="workload-list__bar" aria-hidden="true">
+              <span [style.width.%]="workloadBarWidth(item.estimatedHours)"></span>
+            </div>
           </li>
         }
       </ul>

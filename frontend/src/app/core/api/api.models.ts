@@ -315,6 +315,26 @@ export interface UpdateNotificationSettingsRequest {
   defaultReminderOffsetsMinutes?: string | null;
 }
 
+/** Dashboard */
+
+export interface WorkloadByProject {
+  projectId: string;
+  projectName: string;
+  taskCount: number;
+  estimatedHours: number;
+}
+
+export interface DashboardSummary {
+  dueTodayCount: number;
+  dueThisWeekCount: number;
+  overdueCount: number;
+  highPriorityCount: number;
+  completedCount: number;
+  remainingCount: number;
+  estimatedHoursRemainingThisWeek: number;
+  workloadByProject: WorkloadByProject[];
+}
+
 /** Time entries & insights */
 
 export interface TimeEntryDto {
