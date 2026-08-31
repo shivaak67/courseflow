@@ -130,19 +130,21 @@ docker compose up --build
 
 | Service  | Host port | Notes |
 |----------|-----------|--------|
-| frontend | 4200 → 80 | nginx serves the SPA with client-side routing fallback |
+| frontend | 4200 → 80 | nginx serves the SPA with client-side routing fallback (`FRONTEND_PUBLISHED_PORT`) |
 | backend  | 8080 → 8080 | Browser calls `http://localhost:8080` for API and OAuth (matches Angular `apiBaseUrl`) |
-| db       | 5432 → 5432 | Compose Postgres; backend uses hostname `db` inside the network |
+| db       | 5433 → 5432 | Default host mapping avoids clashing with a local Postgres on 5432 (`POSTGRES_PUBLISHED_PORT`) |
+
+Compose waits for Postgres and the API health check before starting the frontend.
 
 **Google OAuth:** keep the authorized redirect URI as `http://localhost:8080/login/oauth2/code/google` (same as non-Docker local). Success redirect stays `http://localhost:4200/auth/callback`.
 
-**Port 5432 conflict:** if you already run Postgres on the host (or another container named similarly), stop it or change the compose port mapping. Compose brings up its own `db` service and volume (`prioritize_pgdata`); it does not use a host-installed `prioritize-postgres` instance.
+**Running backend on the host against Compose Postgres:** point `POSTGRES_HOST=localhost` and `POSTGRES_PORT=5433` in `.env` (or whatever you set for `POSTGRES_PUBLISHED_PORT`).
 
 Stop with `Ctrl+C` or `docker compose down`. Add `-v` to also remove the database volume.
 
 ## CI/CD
 
-GitHub Actions builds and tests the backend (`./mvnw -B test`) and frontend (`npm ci` / `npm run build`) on pull requests and pushes to `main` and `develop`. Deployment workflows for AWS come after the MVP.
+GitHub Actions builds and tests the backend (`./mvnw -B test`) and frontend (`npm ci` / `npm run build`) on pull requests and pushes to `main` and `develop`. A separate job builds Docker images for `backend` and `frontend` to catch Dockerfile regressions. Deployment workflows for AWS come after the MVP.
 
 ## Deployment (AWS)
 

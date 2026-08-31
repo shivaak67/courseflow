@@ -1,12 +1,13 @@
 services:
   db:
     image: postgres:16
+    container_name: prioritize-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-prioritize}
       POSTGRES_USER: ${POSTGRES_USER:-prioritize}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PUBLISHED_PORT:-5433}:5432"
     volumes:
       - prioritize_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -14,14 +15,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
 
   backend:
     build: ./backend
+    container_name: prioritize-backend
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT:-8080}:8080"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       POSTGRES_HOST: db
@@ -36,16 +39,21 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       APP_OAUTH_SUCCESS_REDIRECT: ${APP_OAUTH_SUCCESS_REDIRECT:-http://localhost:4200/auth/callback}
-      CANVAS_BASE_URL: ${CANVAS_BASE_URL:-}
-      CANVAS_API_TOKEN: ${CANVAS_API_TOKEN:-}
-      CANVAS_MOCK_ENABLED: ${CANVAS_MOCK_ENABLED:-false}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
 
   frontend:
     build: ./frontend
+    container_name: prioritize-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "4200:80"
+      - "${FRONTEND_PUBLISHED_PORT:-4200}:80"
 
 volumes:
   prioritize_pgdata:
