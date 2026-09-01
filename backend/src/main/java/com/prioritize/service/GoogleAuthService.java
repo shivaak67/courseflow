@@ -7,7 +7,9 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.prioritize.dto.AuthResponse;
 import com.prioritize.exception.ApiException;
+import com.prioritize.mapper.UserMapper;
 import com.prioritize.model.AuthProvider;
 import com.prioritize.model.Role;
 import com.prioritize.model.User;
@@ -26,7 +28,7 @@ public class GoogleAuthService {
     }
 
     @Transactional
-    public String loginOrRegister(OidcUser oidcUser) {
+    public AuthResponse loginOrRegister(OidcUser oidcUser) {
         if (oidcUser.getEmail() == null || oidcUser.getEmail().isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Google account email is required");
         }
@@ -41,7 +43,10 @@ public class GoogleAuthService {
                 .map(existing -> linkOrRefresh(existing, subject, oidcUser))
                 .orElseGet(() -> createGoogleUser(email, subject, oidcUser));
 
-        return jwtService.generateToken(user.getId(), user.getEmail());
+        return new AuthResponse(
+                jwtService.generateToken(user.getId(), user.getEmail()),
+                jwtService.getExpirationMs(),
+                UserMapper.toResponse(user));
     }
 
     private User linkOrRefresh(User existing, String subject, OidcUser oidcUser) {

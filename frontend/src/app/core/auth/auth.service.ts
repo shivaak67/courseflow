@@ -3,6 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  AuthConfig,
   AuthResponse,
   LoginRequest,
   RegisterRequest,
@@ -39,6 +40,10 @@ export class AuthService {
       .pipe(tap((res) => this.persist(res.accessToken, res.user)));
   }
 
+  getConfig(): Observable<AuthConfig> {
+    return this.http.get<AuthConfig>(`${this.api}/config`);
+  }
+
   me(): Observable<UserDto> {
     return this.http.get<UserDto>(`${this.api}/me`).pipe(
       tap((user) => {
@@ -59,6 +64,35 @@ export class AuthService {
   completeOAuthLogin(token: string): Observable<UserDto> {
     localStorage.setItem(TOKEN_KEY, token);
     return this.me();
+  }
+
+  setSession(token: string, user: UserDto): void {
+    this.persist(token, user);
+  }
+
+  userFromAccessToken(token: string): UserDto | null {
+    try {
+      const payloadPart = token.split('.')[1];
+      if (!payloadPart) {
+        return null;
+      }
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(normalized)) as { sub?: string; email?: string };
+      if (!payload.sub || !payload.email) {
+        return null;
+      }
+      return {
+        id: payload.sub,
+        email: payload.email,
+        firstName: 'Google',
+        lastName: 'User',
+        authProvider: 'GOOGLE',
+        phoneNumber: null,
+        phoneVerified: false,
+      };
+    } catch {
+      return null;
+    }
   }
 
   logout(): void {

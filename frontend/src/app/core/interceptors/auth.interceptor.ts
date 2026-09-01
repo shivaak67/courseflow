@@ -19,7 +19,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err) => {
-      if (err.status === 401 && !isPublicAuth) {
+      const onCallback = router.url.startsWith('/auth/callback');
+      if (err.status === 401 && !isPublicAuth && !onCallback) {
         auth.logout();
         void router.navigateByUrl('/auth/login');
       }

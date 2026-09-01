@@ -1,7 +1,7 @@
 package com.prioritize.security;
 
 import java.io.IOException;
-import java.net.URLEncoder;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,8 +9,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.prioritize.config.OAuthProperties;
+import com.prioritize.dto.AuthResponse;
+import com.prioritize.dto.UserResponse;
 import com.prioritize.service.GoogleAuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,10 +41,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        String token = googleAuthService.loginOrRegister(oidcUser);
-        String redirectBase = oauthProperties.getSuccessRedirect();
-        String separator = redirectBase.contains("?") ? "&" : "?";
-        String location = redirectBase + separator + "token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
-        response.sendRedirect(location);
+        AuthResponse auth = googleAuthService.loginOrRegister(oidcUser);
+        UserResponse user = auth.user();
+        URI location = UriComponentsBuilder.fromUriString(oauthProperties.getSuccessRedirect())
+                .queryParam("token", auth.accessToken())
+                .queryParam("userId", user.id().toString())
+                .queryParam("email", user.email())
+                .queryParam("firstName", user.firstName())
+                .queryParam("lastName", user.lastName())
+                .queryParam("authProvider", user.authProvider().name())
+                .queryParam("phoneVerified", user.phoneVerified())
+                .build()
+                .encode(StandardCharsets.UTF_8)
+                .toUri();
+        response.sendRedirect(location.toString());
     }
 }

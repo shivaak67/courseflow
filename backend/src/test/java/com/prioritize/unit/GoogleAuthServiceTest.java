@@ -55,10 +55,11 @@ class GoogleAuthServiceTest {
             return user;
         });
         when(jwtService.generateToken(any(UUID.class), any(String.class))).thenReturn("jwt-token");
+        when(jwtService.getExpirationMs()).thenReturn(86400000L);
 
-        String token = googleAuthService.loginOrRegister(oidcUser);
+        var auth = googleAuthService.loginOrRegister(oidcUser);
 
-        assertThat(token).isEqualTo("jwt-token");
+        assertThat(auth.accessToken()).isEqualTo("jwt-token");
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         User saved = captor.getValue();
@@ -88,6 +89,7 @@ class GoogleAuthServiceTest {
         when(userRepository.findByEmailIgnoreCase("ada@example.com")).thenReturn(Optional.of(local));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generateToken(id, "ada@example.com")).thenReturn("jwt-token");
+        when(jwtService.getExpirationMs()).thenReturn(86400000L);
 
         googleAuthService.loginOrRegister(oidcUser);
 
