@@ -29,7 +29,6 @@ export class AuthCallbackComponent implements OnInit {
     const profile = this.userFromQueryParams(params);
     if (profile) {
       this.auth.setSession(token, profile);
-      this.auth.refreshCurrentUser();
       void this.router.navigateByUrl('/dashboard');
       return;
     }
@@ -37,7 +36,6 @@ export class AuthCallbackComponent implements OnInit {
     const jwtProfile = this.auth.userFromAccessToken(token);
     if (jwtProfile) {
       this.auth.setSession(token, jwtProfile);
-      this.auth.refreshCurrentUser();
       void this.router.navigateByUrl('/dashboard');
       return;
     }

@@ -43,6 +43,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         AuthResponse auth = googleAuthService.loginOrRegister(oidcUser);
         UserResponse user = auth.user();
+
+        if (request.getSession(false) != null) {
+            request.getSession(false).invalidate();
+        }
+
         URI location = UriComponentsBuilder.fromUriString(oauthProperties.getSuccessRedirect())
                 .queryParam("token", auth.accessToken())
                 .queryParam("userId", user.id().toString())

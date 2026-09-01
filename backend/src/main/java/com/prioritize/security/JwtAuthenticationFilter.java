@@ -41,11 +41,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = header.substring(7);
-        if (!jwtService.isValid(token) || SecurityContextHolder.getContext().getAuthentication() != null) {
+        if (!jwtService.isValid(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        // Prefer JWT over an existing OAuth session (same browser sends JSESSIONID after Google login).
         UUID userId = jwtService.extractUserId(token);
         userRepository.findById(userId).ifPresent(user -> {
             UserPrincipal principal = new UserPrincipal(user);
