@@ -1,13 +1,24 @@
 #!/bin/bash
 set -euo pipefail
+exec > >(tee /var/log/prioritize-user-data.log) 2>&1
 
 # Bootstraps Prioritize on a fresh Amazon Linux 2023 EC2 instance (free-tier t2.micro).
 REPO_URL="${PRIORITIZE_REPO_URL:-https://github.com/shivaak67/courseflow.git}"
 REPO_BRANCH="${PRIORITIZE_REPO_BRANCH:-develop}"
 APP_DIR="/opt/prioritize"
 
-dnf update -y
-dnf install -y docker git curl openssl
+echo "=== Prioritize bootstrap starting at $(date -Is) ==="
+
+# t2.micro has 1 GiB RAM; Docker builds need swap to avoid OOM.
+if ! swapon --show | grep -q /swapfile; then
+  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+dnf install -y docker git openssl
 
 systemctl enable docker
 systemctl start docker
@@ -21,7 +32,7 @@ rm -rf "${APP_DIR}"
 git clone --depth 1 --branch "${REPO_BRANCH}" "${REPO_URL}" "${APP_DIR}"
 cd "${APP_DIR}"
 
-PUBLIC_IP="$(curl -fsS http://169.254.169.254/latest/meta-data/public-ipv4)"
+PUBLIC_IP="$(TOKEN=$(curl -fsS -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"); curl -fsS -H "X-aws-ec2-metadata-token: ${TOKEN}" http://169.254.169.254/latest/meta-data/public-ipv4)"
 APP_URL="http://${PUBLIC_IP}"
 JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
 POSTGRES_PASSWORD="$(openssl rand -base64 24 | tr -d '\n')"
@@ -53,7 +64,15 @@ NOTIFICATIONS_EMAIL_ENABLED=false
 NOTIFICATIONS_SMS_ENABLED=false
 EOF
 
-docker compose -f docker-compose.prod.yml up -d --build
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
+echo "=== Pulling pre-built images from GHCR ==="
+docker compose -f docker-compose.prod.yml pull
+
+echo "=== Starting stack ==="
+docker compose -f docker-compose.prod.yml up -d
 
 echo "Prioritize deployed at ${APP_URL}" > /var/log/prioritize-deploy.log
-echo "Health check: ${APP_URL}/api/auth/login (POST) or open ${APP_URL} in a browser." >> /var/log/prioritize-deploy.log
+echo "Finished at $(date -Is)" >> /var/log/prioritize-deploy.log
+echo "=== Prioritize bootstrap complete at $(date -Is) ==="

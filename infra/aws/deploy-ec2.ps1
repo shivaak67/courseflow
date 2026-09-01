@@ -81,7 +81,7 @@ $vpcId = Get-DefaultVpcId
 $sgId = Ensure-SecurityGroup -VpcId $vpcId
 $amiId = Get-LatestAmazonLinuxAmi
 $userDataPath = Join-Path $PSScriptRoot "user-data.sh"
-$userData = Get-Content $userDataPath -Raw
+$userData = (Get-Content $userDataPath -Raw) -replace "`r`n", "`n"
 $userData = $userData.Replace('${PRIORITIZE_REPO_URL:-https://github.com/shivaak67/courseflow.git}', $RepoUrl)
 $userData = $userData.Replace('${PRIORITIZE_REPO_BRANCH:-develop}', $RepoBranch)
 $userDataB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($userData))
@@ -93,6 +93,7 @@ $launchArgs = @(
     "--instance-type", $InstanceType,
     "--security-group-ids", $sgId,
     "--user-data", $userDataB64,
+    "--metadata-options", "HttpEndpoint=enabled,HttpTokens=optional",
     "--tag-specifications", "ResourceType=instance,Tags=[{Key=Name,Value=$ProjectName},{Key=Project,Value=$ProjectName}]",
     "--query", "Instances[0].InstanceId",
     "--output", "text"

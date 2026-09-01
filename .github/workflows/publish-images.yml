@@ -1,0 +1,46 @@
+name: Publish Docker images
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker-compose.prod.yml'
+      - '.github/workflows/publish-images.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/shivaak67/courseflow-backend:latest
+            ghcr.io/shivaak67/courseflow-backend:${{ github.sha }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          build-args: |
+            API_BASE_URL=
+            NGINX_CONF=nginx.prod.conf
+          push: true
+          tags: |
+            ghcr.io/shivaak67/courseflow-frontend:latest
+            ghcr.io/shivaak67/courseflow-frontend:${{ github.sha }}
