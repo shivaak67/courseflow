@@ -13,6 +13,10 @@ export interface UserDto {
   phoneVerified: boolean;
 }
 
+export interface AuthConfig {
+  googleOAuthEnabled: boolean;
+}
+
 export interface AuthResponse {
   accessToken: string;
   expiresIn: number;

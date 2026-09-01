@@ -90,22 +90,24 @@ if [ -n "${PRIORITIZE_GITHUB_TOKEN:-}" ]; then
   echo "${PRIORITIZE_GITHUB_TOKEN}" | docker login ghcr.io -u shivaak67 --password-stdin || true
 fi
 
-echo "=== Pulling pre-built images from GHCR (no local build unless pull fails) ==="
+echo "=== Pulling pre-built images from GHCR ==="
 docker compose -f "${COMPOSE_FILE}" pull db || true
 
-if ! docker compose -f "${COMPOSE_FILE}" pull backend; then
-  echo "Backend pull failed; building locally (slow on t2.micro)..."
-  docker compose -f "${COMPOSE_FILE}" build backend || true
-fi
-
 SHOULD_BUILD_FRONTEND="${PRIORITIZE_BUILD_FRONTEND:-false}"
-if ! docker compose -f "${COMPOSE_FILE}" pull frontend; then
-  echo "Frontend pull failed; building locally with reduced Node heap..."
-  SHOULD_BUILD_FRONTEND=true
+SHOULD_BUILD_BACKEND="${PRIORITIZE_BUILD_BACKEND:-false}"
+
+if [ "${SHOULD_BUILD_BACKEND}" = "true" ]; then
+  echo "=== Building backend image from source (skipping GHCR pull) ==="
+  docker compose -f "${COMPOSE_FILE}" build backend
+else
+  if ! docker compose -f "${COMPOSE_FILE}" pull backend; then
+    echo "Backend pull failed; building locally (slow on t2.micro)..."
+    docker compose -f "${COMPOSE_FILE}" build backend
+  fi
 fi
 
 if [ "${SHOULD_BUILD_FRONTEND}" = "true" ]; then
-  echo "=== Building frontend image from source ==="
+  echo "=== Building frontend image from source (skipping GHCR pull) ==="
   export NODE_OPTIONS="--max-old-space-size=384"
   export DOCKER_BUILDKIT=1
   export COMPOSE_DOCKER_CLI_BUILD=1
@@ -139,16 +141,19 @@ NGINX_MAP
     mv frontend/nginx.prod.conf.tmp frontend/nginx.prod.conf
     sed -i 's/proxy_set_header X-Forwarded-Proto \$scheme;/proxy_set_header X-Forwarded-Proto $forwarded_proto;/g' frontend/nginx.prod.conf
   fi
-  docker compose -f "${COMPOSE_FILE}" build frontend || true
-fi
-
-if [ "${PRIORITIZE_BUILD_BACKEND:-false}" = "true" ]; then
-  echo "=== Building backend image from source ==="
-  docker compose -f "${COMPOSE_FILE}" build backend || true
+  docker compose -f "${COMPOSE_FILE}" build frontend
+else
+  if ! docker compose -f "${COMPOSE_FILE}" pull frontend; then
+    echo "Frontend pull failed; building locally with reduced Node heap..."
+    export NODE_OPTIONS="--max-old-space-size=384"
+    export DOCKER_BUILDKIT=1
+    export COMPOSE_DOCKER_CLI_BUILD=1
+    docker compose -f "${COMPOSE_FILE}" build frontend
+  fi
 fi
 
 echo "=== Starting stack ==="
-docker compose -f "${COMPOSE_FILE}" up -d
+docker compose -f "${COMPOSE_FILE}" up -d --pull never
 
 echo "=== Waiting for Postgres ==="
 for i in $(seq 1 60); do

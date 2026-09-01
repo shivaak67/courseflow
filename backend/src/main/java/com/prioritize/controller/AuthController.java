@@ -9,10 +9,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.prioritize.dto.AuthConfigResponse;
 import com.prioritize.dto.AuthResponse;
 import com.prioritize.dto.LoginRequest;
 import com.prioritize.dto.RegisterRequest;
 import com.prioritize.dto.UserResponse;
+import com.prioritize.config.OAuthProperties;
 import com.prioritize.security.UserPrincipal;
 import com.prioritize.service.AuthService;
 
@@ -23,9 +25,16 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final OAuthProperties oauthProperties;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, OAuthProperties oauthProperties) {
         this.authService = authService;
+        this.oauthProperties = oauthProperties;
+    }
+
+    @GetMapping("/config")
+    public ResponseEntity<AuthConfigResponse> config() {
+        return ResponseEntity.ok(new AuthConfigResponse(oauthProperties.getGoogle().isEnabled()));
     }
 
     @PostMapping("/register")

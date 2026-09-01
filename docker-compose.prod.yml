@@ -37,8 +37,8 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://localhost}
       GOOGLE_OAUTH_ENABLED: ${GOOGLE_OAUTH_ENABLED:-false}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
       APP_OAUTH_SUCCESS_REDIRECT: ${APP_OAUTH_SUCCESS_REDIRECT:-http://localhost/auth/callback}
       AI_ENABLED: ${AI_ENABLED:-false}
       AI_API_KEY: ${AI_API_KEY:-}
@@ -48,12 +48,15 @@ services:
       AI_KEEP_ALIVE: ${AI_KEEP_ALIVE:-30m}
       NOTIFICATIONS_EMAIL_ENABLED: ${NOTIFICATIONS_EMAIL_ENABLED:-false}
       NOTIFICATIONS_SMS_ENABLED: ${NOTIFICATIONS_SMS_ENABLED:-false}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
+      SPRING_APPLICATION_JSON: '{"management":{"health":{"mail":{"enabled":false}}}}'
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx256m -XX:+UseSerialGC}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 120s
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 300s
 
   frontend:
     image: ghcr.io/shivaak67/courseflow-frontend:latest
@@ -66,7 +69,7 @@ services:
     restart: unless-stopped
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
     ports:
       - "80:80"
 
