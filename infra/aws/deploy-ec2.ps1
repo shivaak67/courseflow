@@ -163,10 +163,10 @@ $githubToken = if ($localEnv.ContainsKey('GITHUB_TOKEN') -and $localEnv['GITHUB_
 } else { '' }
 $userData = $userData.Replace('${PRIORITIZE_GITHUB_TOKEN:-}', $githubToken)
 
-$buildFrontend = if ($BuildFrontend) { 'true' } elseif ($localEnv.ContainsKey('PRIORITIZE_BUILD_FRONTEND') -and $localEnv['PRIORITIZE_BUILD_FRONTEND'] -eq 'true') { 'true' } else { 'false' }
-$buildBackend = if ($BuildBackend) { 'true' } elseif ($localEnv.ContainsKey('PRIORITIZE_BUILD_BACKEND') -and $localEnv['PRIORITIZE_BUILD_BACKEND'] -eq 'true') { 'true' } else { 'false' }
-$userData = $userData.Replace('${PRIORITIZE_BUILD_FRONTEND:-false}', $buildFrontend)
-$userData = $userData.Replace('${PRIORITIZE_BUILD_BACKEND:-false}', $buildBackend)
+$shouldBuildFrontend = if ($BuildFrontend) { 'true' } elseif ($localEnv.ContainsKey('PRIORITIZE_BUILD_FRONTEND') -and $localEnv['PRIORITIZE_BUILD_FRONTEND'] -eq 'true') { 'true' } else { 'false' }
+$shouldBuildBackend = if ($BuildBackend) { 'true' } elseif ($localEnv.ContainsKey('PRIORITIZE_BUILD_BACKEND') -and $localEnv['PRIORITIZE_BUILD_BACKEND'] -eq 'true') { 'true' } else { 'false' }
+$userData = $userData.Replace('${PRIORITIZE_BUILD_FRONTEND:-false}', $shouldBuildFrontend)
+$userData = $userData.Replace('${PRIORITIZE_BUILD_BACKEND:-false}', $shouldBuildBackend)
 
 Write-Host "App public URL: $appPublicUrl"
 
