@@ -2,17 +2,20 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+ARG API_BASE_URL=http://localhost:8080
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-# apiBaseUrl stays http://localhost:8080 (environment.ts) so the browser
-# talks to the host-mapped backend; Google OAuth redirect remains :8080.
-RUN npm run build
+# Local compose keeps localhost:8080; prod compose passes API_BASE_URL="" for same-origin nginx proxy.
+RUN sed -i "s|apiBaseUrl: 'http://localhost:8080'|apiBaseUrl: '${API_BASE_URL}'|" src/environments/environment.ts \
+    && npm run build
 
 # Runtime — static SPA via nginx
 FROM nginx:alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ARG NGINX_CONF=nginx.conf
+COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/prioritize/browser /usr/share/nginx/html
 
 EXPOSE 80
