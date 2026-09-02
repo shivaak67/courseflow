@@ -32,6 +32,11 @@ export interface TimelineItem {
   completed?: boolean;
 }
 
+export interface TimelineLayoutItem extends TimelineItem {
+  column: number;
+  columnCount: number;
+}
+
 const DAY_START_HOUR = 0;
 const DAY_END_HOUR = 24;
 const HOUR_HEIGHT_PX = 52;
@@ -88,6 +93,8 @@ export class TodayComponent implements OnInit, AfterViewChecked {
   readonly timelineItems = computed(() =>
     buildTimelineItems(this.viewDate(), this.tasks(), this.events()),
   );
+
+  readonly timelineLayouts = computed(() => layoutOverlappingItems(this.timelineItems()));
 
   readonly unscheduledTasks = computed(() => {
     const key = toLocalDateKey(this.viewDate());
@@ -180,36 +187,52 @@ export class TodayComponent implements OnInit, AfterViewChecked {
     return date.toLocaleTimeString(undefined, { hour: 'numeric' });
   }
 
-  itemStyle(item: TimelineItem): Record<string, string> {
+  itemStyle(item: TimelineLayoutItem): Record<string, string> {
     const total = totalDayMinutes(DAY_START_HOUR, DAY_END_HOUR);
     const startMin = minutesFromDayStart(item.start, DAY_START_HOUR, DAY_END_HOUR);
     const top = (clamp(startMin, 0, total) / total) * 100;
 
+    let height: string;
+    let minHeight: string;
+
     if (item.kind === 'task') {
       const minHeightPx = 44;
-      return {
-        top: `${top}%`,
-        height: `${(minHeightPx / TIMELINE_HEIGHT_PX) * 100}%`,
-        minHeight: `${minHeightPx}px`,
-      };
+      height = `${(minHeightPx / TIMELINE_HEIGHT_PX) * 100}%`;
+      minHeight = `${minHeightPx}px`;
+    } else {
+      const endMin = minutesFromDayStart(item.end, DAY_START_HOUR, DAY_END_HOUR);
+      const clampedStart = clamp(startMin, 0, total);
+      const clampedEnd = clamp(
+        Math.max(endMin, clampedStart + 30),
+        clampedStart + 30,
+        total,
+      );
+      const duration = clampedEnd - clampedStart;
+      const heightPct = (duration / total) * 100;
+      const minHeightPx = duration <= 45 ? 56 : 72;
+      height = `${Math.max(heightPct, (minHeightPx / TIMELINE_HEIGHT_PX) * 100)}%`;
+      minHeight = `${minHeightPx}px`;
     }
 
-    const endMin = minutesFromDayStart(item.end, DAY_START_HOUR, DAY_END_HOUR);
-    const clampedStart = clamp(startMin, 0, total);
-    const clampedEnd = clamp(
-      Math.max(endMin, clampedStart + 30),
-      clampedStart + 30,
-      total,
-    );
-    const duration = clampedEnd - clampedStart;
-    const height = (duration / total) * 100;
-    const minHeightPx = duration <= 45 ? 56 : 72;
-
-    return {
+    const style: Record<string, string> = {
       top: `${top}%`,
-      height: `${Math.max(height, (minHeightPx / TIMELINE_HEIGHT_PX) * 100)}%`,
-      minHeight: `${minHeightPx}px`,
+      height,
+      minHeight,
     };
+
+    if (item.columnCount <= 1) {
+      style['left'] = '0.35rem';
+      style['right'] = '0.35rem';
+      return style;
+    }
+
+    const widthPct = 100 / item.columnCount;
+    const leftPct = item.column * widthPct;
+    style['left'] = `calc(0.35rem + (100% - 0.7rem) * ${leftPct / 100})`;
+    style['width'] = `calc((100% - 0.7rem) * ${widthPct / 100} - 0.2rem)`;
+    style['right'] = 'auto';
+    style['zIndex'] = String(2 + item.column);
+    return style;
   }
 
   private scrollTimelineIntoView(): void {
@@ -377,6 +400,82 @@ function buildTimelineItems(
   }
 
   return items.sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+
+function layoutOverlappingItems(items: TimelineItem[]): TimelineLayoutItem[] {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const sorted = [...items].sort((a, b) => {
+    const diff = a.start.getTime() - b.start.getTime();
+    if (diff !== 0) {
+      return diff;
+    }
+    return a.id.localeCompare(b.id);
+  });
+
+  const layouts: TimelineLayoutItem[] = [];
+  let cluster: TimelineItem[] = [];
+  let clusterEnd = 0;
+
+  const flushCluster = (): void => {
+    if (cluster.length === 0) {
+      return;
+    }
+    layouts.push(...assignTimelineColumns(cluster));
+    cluster = [];
+    clusterEnd = 0;
+  };
+
+  for (const item of sorted) {
+    const start = item.start.getTime();
+    const end = timelineItemEnd(item).getTime();
+    if (cluster.length === 0 || start < clusterEnd) {
+      cluster.push(item);
+      clusterEnd = Math.max(clusterEnd, end);
+    } else {
+      flushCluster();
+      cluster.push(item);
+      clusterEnd = end;
+    }
+  }
+  flushCluster();
+
+  return layouts;
+}
+
+function assignTimelineColumns(cluster: TimelineItem[]): TimelineLayoutItem[] {
+  const sorted = [...cluster].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const columnEnds: number[] = [];
+  const placements: { item: TimelineItem; column: number }[] = [];
+
+  for (const item of sorted) {
+    const start = item.start.getTime();
+    const end = timelineItemEnd(item).getTime();
+    let column = columnEnds.findIndex((columnEnd) => columnEnd <= start);
+    if (column === -1) {
+      column = columnEnds.length;
+      columnEnds.push(end);
+    } else {
+      columnEnds[column] = end;
+    }
+    placements.push({ item, column });
+  }
+
+  const columnCount = Math.max(1, columnEnds.length);
+  return placements.map(({ item, column }) => ({
+    ...item,
+    column,
+    columnCount,
+  }));
+}
+
+function timelineItemEnd(item: TimelineItem): Date {
+  if (item.kind === 'task') {
+    return addMinutes(item.start, 30);
+  }
+  return item.end.getTime() > item.start.getTime() ? item.end : addMinutes(item.start, 30);
 }
 
 function taskDueDateTime(dueDate: string, dueTime: string): Date | null {

@@ -90,7 +90,7 @@
               ></div>
             }
 
-            @for (item of timelineItems(); track item.id) {
+            @for (item of timelineLayouts(); track item.id) {
               @let layout = itemStyle(item);
               <div
                 class="today__item"
