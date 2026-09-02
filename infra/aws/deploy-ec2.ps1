@@ -317,7 +317,8 @@ if ($dataVolumeId) {
     $placementAz = Get-DefaultSubnetAz -VpcId $vpcId
 }
 $dataVolumeId = Ensure-DataVolume -AvailabilityZone $placementAz
-$blockDeviceMappings = (@(
+$blockDeviceMappingsPath = Join-Path $env:TEMP "prioritize-block-device-mappings.json"
+@(
     @{
         DeviceName = '/dev/sdf'
         Ebs = @{
@@ -325,7 +326,8 @@ $blockDeviceMappings = (@(
             DeleteOnTermination = $false
         }
     }
-) | ConvertTo-Json -Compress -Depth 4)
+) | ConvertTo-Json -Depth 4 | Set-Content -Path $blockDeviceMappingsPath -Encoding ascii
+$blockDeviceMappingsUri = "file://$($blockDeviceMappingsPath -replace '\\', '/')"
 
 $launchArgs = @(
     "ec2", "run-instances",
@@ -333,7 +335,7 @@ $launchArgs = @(
     "--image-id", $amiId,
     "--instance-type", $InstanceType,
     "--placement", "AvailabilityZone=$placementAz",
-    "--block-device-mappings", $blockDeviceMappings,
+    "--block-device-mappings", $blockDeviceMappingsUri,
     "--security-group-ids", $sgId,
     "--user-data", $userDataB64,
     "--metadata-options", "HttpEndpoint=enabled,HttpTokens=optional",
@@ -347,6 +349,9 @@ if ($KeyName) {
 
 Write-Host "Launching $InstanceType in $Region (free-tier eligible)..."
 $instanceId = & $script:AwsExe @launchArgs
+if (-not $instanceId -or $instanceId -eq "None") {
+    throw "Failed to launch EC2 instance. Check AWS CLI output above."
+}
 Write-Host "Instance $instanceId launched. Waiting for public IP..."
 
 & $script:AwsExe ec2 wait instance-running --region $Region --instance-ids $instanceId
