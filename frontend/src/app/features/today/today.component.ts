@@ -42,6 +42,8 @@ const DAY_END_HOUR = 24;
 const HOUR_HEIGHT_PX = 52;
 const HOUR_COUNT = DAY_END_HOUR - DAY_START_HOUR;
 const TIMELINE_HEIGHT_PX = HOUR_HEIGHT_PX * HOUR_COUNT;
+const GUTTER = '0.35rem';
+const COLUMN_GAP_PX = 4;
 
 @Component({
   selector: 'app-today',
@@ -214,25 +216,16 @@ export class TodayComponent implements OnInit, AfterViewChecked {
       minHeight = `${minHeightPx}px`;
     }
 
-    const style: Record<string, string> = {
+    const fraction = 1 / item.columnCount;
+    const gapPx = item.columnCount > 1 ? COLUMN_GAP_PX : 0;
+
+    return {
       top: `${top}%`,
       height,
       minHeight,
+      left: `calc(${GUTTER} + (100% - ${GUTTER} * 2) * ${item.column * fraction})`,
+      width: `calc((100% - ${GUTTER} * 2) * ${fraction} - ${gapPx}px)`,
     };
-
-    if (item.columnCount <= 1) {
-      style['left'] = '0.35rem';
-      style['right'] = '0.35rem';
-      return style;
-    }
-
-    const widthPct = 100 / item.columnCount;
-    const leftPct = item.column * widthPct;
-    style['left'] = `calc(0.35rem + (100% - 0.7rem) * ${leftPct / 100})`;
-    style['width'] = `calc((100% - 0.7rem) * ${widthPct / 100} - 0.2rem)`;
-    style['right'] = 'auto';
-    style['zIndex'] = String(2 + item.column);
-    return style;
   }
 
   private scrollTimelineIntoView(): void {

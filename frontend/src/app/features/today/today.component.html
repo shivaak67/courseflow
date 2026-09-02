@@ -102,6 +102,8 @@
                 [style.top]="layout['top']"
                 [style.height]="layout['height']"
                 [style.min-height]="layout['minHeight']"
+                [style.left]="layout['left']"
+                [style.width]="layout['width']"
                 [attr.role]="item.kind === 'event' ? 'button' : null"
                 [attr.tabindex]="item.kind === 'event' ? 0 : null"
                 (click)="item.kind === 'event' ? selectEvent(item) : null"
