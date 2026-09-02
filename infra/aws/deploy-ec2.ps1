@@ -317,17 +317,7 @@ if ($dataVolumeId) {
     $placementAz = Get-DefaultSubnetAz -VpcId $vpcId
 }
 $dataVolumeId = Ensure-DataVolume -AvailabilityZone $placementAz
-$blockDeviceMappingsPath = Join-Path $env:TEMP "prioritize-block-device-mappings.json"
-@(
-    @{
-        DeviceName = '/dev/sdf'
-        Ebs = @{
-            VolumeId = $dataVolumeId
-            DeleteOnTermination = $false
-        }
-    }
-) | ConvertTo-Json -Depth 4 | Set-Content -Path $blockDeviceMappingsPath -Encoding ascii
-$blockDeviceMappingsUri = "file://$($blockDeviceMappingsPath -replace '\\', '/')"
+$blockDeviceMappings = "[{""DeviceName"":""/dev/sdf"",""Ebs"":{""VolumeId"":""$dataVolumeId"",""DeleteOnTermination"":false}}]"
 
 $launchArgs = @(
     "ec2", "run-instances",
@@ -335,7 +325,7 @@ $launchArgs = @(
     "--image-id", $amiId,
     "--instance-type", $InstanceType,
     "--placement", "AvailabilityZone=$placementAz",
-    "--block-device-mappings", $blockDeviceMappingsUri,
+    "--block-device-mappings", $blockDeviceMappings,
     "--security-group-ids", $sgId,
     "--user-data", $userDataB64,
     "--metadata-options", "HttpEndpoint=enabled,HttpTokens=optional",
