@@ -66,6 +66,28 @@ function Ensure-SecurityGroup {
     return $sgId
 }
 
+function Get-DefaultSubnetAz {
+    param([string]$VpcId)
+    $az = & $script:AwsExe ec2 describe-subnets --region $Region `
+        --filters "Name=vpc-id,Values=$VpcId" "Name=default-for-az,Values=true" `
+        --query "Subnets[0].AvailabilityZone" --output text
+    if (-not $az -or $az -eq "None") {
+        $az = & $script:AwsExe ec2 describe-subnets --region $Region `
+            --filters "Name=vpc-id,Values=$VpcId" `
+            --query "Subnets[0].AvailabilityZone" --output text
+    }
+    if (-not $az -or $az -eq "None") {
+        throw "Could not determine an availability zone in VPC $VpcId"
+    }
+    return $az
+}
+
+function Get-VolumeAvailabilityZone {
+    param([string]$VolumeId)
+    return (& $script:AwsExe ec2 describe-volumes --region $Region --volume-ids $VolumeId `
+        --query "Volumes[0].AvailabilityZone" --output text)
+}
+
 function Get-LatestAmazonLinuxAmi {
     & $script:AwsExe ec2 describe-images --region $Region `
         --owners amazon `
@@ -283,11 +305,27 @@ if ($aiEnabled -eq 'true' -and $aiApiKey) {
 
 $userDataB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($userData))
 
+$persistedState = Get-PersistedState
+if (-not $dataVolumeId) {
+    $dataVolumeId = Find-DataVolumeId
+}
+if ($dataVolumeId) {
+    $placementAz = Get-VolumeAvailabilityZone -VolumeId $dataVolumeId
+} elseif ($persistedState -and $persistedState.availabilityZone) {
+    $placementAz = [string]$persistedState.availabilityZone
+} else {
+    $placementAz = Get-DefaultSubnetAz -VpcId $vpcId
+}
+$dataVolumeId = Ensure-DataVolume -AvailabilityZone $placementAz
+$blockDeviceMappings = "[{`"DeviceName`":`"/dev/sdf`",`"Ebs`":{`"VolumeId`":`"$dataVolumeId`",`"DeleteOnTermination`":false}}]"
+
 $launchArgs = @(
     "ec2", "run-instances",
     "--region", $Region,
     "--image-id", $amiId,
     "--instance-type", $InstanceType,
+    "--placement", "AvailabilityZone=$placementAz",
+    "--block-device-mappings", $blockDeviceMappings,
     "--security-group-ids", $sgId,
     "--user-data", $userDataB64,
     "--metadata-options", "HttpEndpoint=enabled,HttpTokens=optional",
@@ -323,8 +361,7 @@ if ($elasticIp) {
 $publicIp = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].PublicIpAddress" --output text
 $availabilityZone = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text
 
-$dataVolumeId = Ensure-DataVolume -AvailabilityZone $availabilityZone
-Attach-DataVolume -InstanceId $instanceId -VolumeId $dataVolumeId
+Write-Host "Data volume $dataVolumeId attached at launch in $availabilityZone"
 
 @{
     instanceId = $instanceId
