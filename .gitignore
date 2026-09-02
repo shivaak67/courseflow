@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.env.prodtest
 *.pem
 *.p12
 *.jks
@@ -57,3 +58,7 @@ coverage/
 *.temp
 .cache/
 infra/aws/deploy-state.json
+infra/aws/console*.txt
+infra/aws/console-out.json
+infra/aws/diagnose-console.txt
+debug-*.log

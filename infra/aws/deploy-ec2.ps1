@@ -163,6 +163,21 @@ $githubToken = if ($localEnv.ContainsKey('GITHUB_TOKEN') -and $localEnv['GITHUB_
 } else { '' }
 $userData = $userData.Replace('${PRIORITIZE_GITHUB_TOKEN:-}', $githubToken)
 
+$aiEnabled = if ($localEnv.ContainsKey('AI_ENABLED') -and $localEnv['AI_ENABLED']) { $localEnv['AI_ENABLED'] } else { 'false' }
+$aiApiKey = if ($aiEnabled -eq 'true' -and $localEnv.ContainsKey('AI_API_KEY') -and $localEnv['AI_API_KEY']) {
+    $localEnv['AI_API_KEY']
+} else {
+    ''
+}
+$aiModel = if ($localEnv.ContainsKey('AI_MODEL') -and $localEnv['AI_MODEL']) { $localEnv['AI_MODEL'] } else { 'gpt-4o-mini' }
+$aiBaseUrl = if ($localEnv.ContainsKey('AI_BASE_URL') -and $localEnv['AI_BASE_URL']) { $localEnv['AI_BASE_URL'] } else { 'https://api.openai.com/v1' }
+$aiWarmupEnabled = if ($localEnv.ContainsKey('AI_WARMUP_ENABLED') -and $localEnv['AI_WARMUP_ENABLED']) { $localEnv['AI_WARMUP_ENABLED'] } else { 'false' }
+$userData = $userData.Replace('${PRIORITIZE_AI_ENABLED:-false}', $aiEnabled)
+$userData = $userData.Replace('${PRIORITIZE_AI_API_KEY:-}', $aiApiKey)
+$userData = $userData.Replace('${PRIORITIZE_AI_MODEL:-gpt-4o-mini}', $aiModel)
+$userData = $userData.Replace('${PRIORITIZE_AI_BASE_URL:-https://api.openai.com/v1}', $aiBaseUrl)
+$userData = $userData.Replace('${PRIORITIZE_AI_WARMUP_ENABLED:-false}', $aiWarmupEnabled)
+
 $shouldBuildFrontend = if ($BuildFrontend) { 'true' } elseif ($localEnv.ContainsKey('PRIORITIZE_BUILD_FRONTEND') -and $localEnv['PRIORITIZE_BUILD_FRONTEND'] -eq 'true') { 'true' } else { 'false' }
 $shouldBuildBackend = if ($BuildBackend) { 'true' } elseif ($localEnv.ContainsKey('PRIORITIZE_BUILD_BACKEND') -and $localEnv['PRIORITIZE_BUILD_BACKEND'] -eq 'true') { 'true' } else { 'false' }
 $userData = $userData.Replace('${PRIORITIZE_BUILD_FRONTEND:-false}', $shouldBuildFrontend)
@@ -174,6 +189,12 @@ if ($googleEnabled -eq 'true') {
     Write-Host "Google OAuth: enabled (credentials from local .env)"
 } else {
     Write-Host "Google OAuth: disabled (set GOOGLE_OAUTH_ENABLED=true in .env to enable on EC2)"
+}
+
+if ($aiEnabled -eq 'true' -and $aiApiKey) {
+    Write-Host "AI assistant: enabled (API key from local .env)"
+} else {
+    Write-Host "AI assistant: disabled (set AI_ENABLED=true and AI_API_KEY in .env to enable on EC2)"
 }
 
 $userDataB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($userData))
