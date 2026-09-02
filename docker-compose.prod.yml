@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-prioritize}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
-      - prioritize_pgdata:/var/lib/postgresql/data
+      - /opt/prioritize-data/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prioritize} -d ${POSTGRES_DB:-prioritize}"]
       interval: 5s
@@ -72,6 +72,3 @@ services:
         condition: service_started
     ports:
       - "80:80"
-
-volumes:
-  prioritize_pgdata:

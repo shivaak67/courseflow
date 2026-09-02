@@ -41,4 +41,4 @@ if (Test-Path $StateFile) {
 if (Test-Path $StateFile) {
     Remove-Item $StateFile
 }
-Write-Host "Teardown complete."
+Write-Host "Teardown complete. EBS data volume (if any) was left in place for redeploy."

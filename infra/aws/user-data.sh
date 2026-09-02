@@ -56,15 +56,69 @@ else
 fi
 echo "Public app URL: ${APP_URL}"
 
+DATA_MOUNT="/opt/prioritize-data"
+PERSIST_ENV="${DATA_MOUNT}/.env"
+mkdir -p "${DATA_MOUNT}"
+
+echo "=== Mounting persistent data volume ==="
+DATA_DEVICE=""
+for i in $(seq 1 60); do
+  if [ -b /dev/sdf ]; then
+    DATA_DEVICE=/dev/sdf
+    break
+  fi
+  ROOT_BASE=$(lsblk -ndo NAME,MOUNTPOINT | awk '$2=="/" {print $1}' | head -1)
+  CANDIDATE=$(lsblk -dpno NAME,TYPE | awk '$2=="disk" {print $1}' | grep -v "/dev/${ROOT_BASE}$" | head -1)
+  if [ -n "${CANDIDATE}" ] && [ -b "${CANDIDATE}" ]; then
+    DATA_DEVICE="${CANDIDATE}"
+    break
+  fi
+  sleep 2
+done
+
+if [ -n "${DATA_DEVICE}" ] && [ -b "${DATA_DEVICE}" ]; then
+  if ! blkid "${DATA_DEVICE}" >/dev/null 2>&1; then
+    echo "Formatting new data volume ${DATA_DEVICE}"
+    mkfs.ext4 -F "${DATA_DEVICE}"
+  fi
+  if ! mountpoint -q "${DATA_MOUNT}"; then
+    mount "${DATA_DEVICE}" "${DATA_MOUNT}"
+    UUID=$(blkid -s UUID -o value "${DATA_DEVICE}")
+    if ! grep -q "${UUID}" /etc/fstab 2>/dev/null; then
+      echo "UUID=${UUID} ${DATA_MOUNT} ext4 defaults,nofail 0 2" >> /etc/fstab
+    fi
+  fi
+  echo "Data volume mounted at ${DATA_MOUNT}"
+else
+  echo "WARNING: No data volume found; database will not survive instance replacement."
+fi
+
+mkdir -p "${DATA_MOUNT}/pgdata"
+chown -R 999:999 "${DATA_MOUNT}/pgdata" 2>/dev/null || true
+
+SAVED_POSTGRES_PASSWORD=""
+SAVED_JWT_SECRET=""
+if [ -f "${PERSIST_ENV}" ]; then
+  SAVED_POSTGRES_PASSWORD=$(grep '^POSTGRES_PASSWORD=' "${PERSIST_ENV}" | cut -d= -f2- || true)
+  SAVED_JWT_SECRET=$(grep '^JWT_SECRET=' "${PERSIST_ENV}" | cut -d= -f2- || true)
+  echo "Reusing persisted database credentials from data volume"
+fi
+if [ -z "${SAVED_POSTGRES_PASSWORD}" ]; then
+  SAVED_POSTGRES_PASSWORD=$(openssl rand -hex 16)
+fi
+if [ -z "${SAVED_JWT_SECRET}" ]; then
+  SAVED_JWT_SECRET=$(openssl rand -hex 48)
+fi
+
 cat > .env <<EOF
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
 POSTGRES_DB=prioritize
 POSTGRES_USER=prioritize
-POSTGRES_PASSWORD=$(openssl rand -hex 16)
+POSTGRES_PASSWORD=${SAVED_POSTGRES_PASSWORD}
 
 SPRING_PROFILES_ACTIVE=prod
-JWT_SECRET=$(openssl rand -hex 48)
+JWT_SECRET=${SAVED_JWT_SECRET}
 JWT_EXPIRATION_MS=86400000
 APP_CORS_ORIGINS=${APP_URL}
 JAVA_TOOL_OPTIONS=-Xmx256m -XX:+UseSerialGC
@@ -85,6 +139,11 @@ AI_WARMUP_ENABLED=${PRIORITIZE_AI_WARMUP_ENABLED:-false}
 NOTIFICATIONS_EMAIL_ENABLED=false
 NOTIFICATIONS_SMS_ENABLED=false
 EOF
+
+if mountpoint -q "${DATA_MOUNT}"; then
+  cp .env "${PERSIST_ENV}"
+  chmod 600 "${PERSIST_ENV}"
+fi
 
 if [ -n "${PRIORITIZE_GITHUB_TOKEN:-}" ]; then
   echo "${PRIORITIZE_GITHUB_TOKEN}" | docker login ghcr.io -u shivaak67 --password-stdin || true

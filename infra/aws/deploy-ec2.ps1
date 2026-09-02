@@ -92,25 +92,99 @@ function Read-EnvFile {
     return $result
 }
 
+function Get-PersistedState {
+    if (Test-Path $StateFile) {
+        return Get-Content $StateFile | ConvertFrom-Json
+    }
+    return $null
+}
+
+function Save-DeployState {
+    param([hashtable]$State)
+    $State | ConvertTo-Json | Set-Content $StateFile
+}
+
+function Find-DataVolumeId {
+    $tagged = & $script:AwsExe ec2 describe-volumes --region $Region `
+        --filters "Name=tag:Project,Values=$ProjectName" "Name=tag:Name,Values=$ProjectName-data" `
+        --query "Volumes[0].VolumeId" --output text 2>$null
+    if ($tagged -and $tagged -ne "None") {
+        return $tagged
+    }
+    $state = Get-PersistedState
+    if ($state -and $state.dataVolumeId) {
+        return [string]$state.dataVolumeId
+    }
+    return $null
+}
+
+function Detach-DataVolumeIfAttached {
+    param([string]$VolumeId)
+    if (-not $VolumeId) { return }
+    $attachment = & $script:AwsExe ec2 describe-volumes --region $Region --volume-ids $VolumeId `
+        --query "Volumes[0].Attachments[0]" --output json 2>$null | ConvertFrom-Json
+    if ($attachment -and $attachment.InstanceId) {
+        Write-Host "Detaching data volume $VolumeId from $($attachment.InstanceId)..."
+        & $script:AwsExe ec2 detach-volume --region $Region --volume-id $VolumeId --force | Out-Null
+        & $script:AwsExe ec2 wait volume-available --region $Region --volume-ids $VolumeId
+    }
+}
+
+function Ensure-DataVolume {
+    param([string]$AvailabilityZone)
+    $volId = Find-DataVolumeId
+    if ($volId) {
+        $az = & $script:AwsExe ec2 describe-volumes --region $Region --volume-ids $volId `
+            --query "Volumes[0].AvailabilityZone" --output text
+        if ($az -ne $AvailabilityZone) {
+            throw "Data volume $volId is in $az but new instance is in $AvailabilityZone. Delete the volume or deploy in $az."
+        }
+        Write-Host "Reusing data volume $volId"
+        return $volId
+    }
+    Write-Host "Creating 8 GiB persistent data volume in $AvailabilityZone..."
+    $volId = & $script:AwsExe ec2 create-volume --region $Region --availability-zone $AvailabilityZone `
+        --size 8 --volume-type gp3 `
+        --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=$ProjectName-data},{Key=Project,Value=$ProjectName}]" `
+        --query VolumeId --output text
+    & $script:AwsExe ec2 wait volume-available --region $Region --volume-ids $volId
+    return $volId
+}
+
+function Attach-DataVolume {
+    param([string]$InstanceId, [string]$VolumeId)
+    if (-not $VolumeId) { return }
+    Detach-DataVolumeIfAttached -VolumeId $VolumeId
+    Write-Host "Attaching data volume $VolumeId to $InstanceId..."
+    & $script:AwsExe ec2 attach-volume --region $Region --volume-id $VolumeId `
+        --instance-id $InstanceId --device /dev/sdf | Out-Null
+    & $script:AwsExe ec2 wait volume-in-use --region $Region --volume-ids $VolumeId
+}
+
 function Stop-ExistingInstances {
+    param([string]$DataVolumeId)
     $existing = & $script:AwsExe ec2 describe-instances --region $Region `
         --filters "Name=tag:Project,Values=$ProjectName" "Name=instance-state-name,Values=running,pending,stopping" `
         --query "Reservations[].Instances[].InstanceId" --output text
     if ($existing -and $existing -ne "None") {
         $ids = $existing -split "\s+" | Where-Object { $_ }
         if ($ids.Count -gt 0) {
+            if ($DataVolumeId) {
+                Detach-DataVolumeIfAttached -VolumeId $DataVolumeId
+            }
             Write-Host "Terminating existing instance(s): $($ids -join ', ')"
             & $script:AwsExe ec2 terminate-instances --region $Region --instance-ids $ids | Out-Null
             & $script:AwsExe ec2 wait instance-terminated --region $Region --instance-ids $ids
-            if (Test-Path $StateFile) { Remove-Item $StateFile }
         }
     }
 }
 
 Require-AwsCli
 
+$dataVolumeId = Find-DataVolumeId
+
 if ($Replace) {
-    Stop-ExistingInstances
+    Stop-ExistingInstances -DataVolumeId $dataVolumeId
 }
 
 if (Test-Path $StateFile) {
@@ -118,6 +192,16 @@ if (Test-Path $StateFile) {
     if ($state.instanceId) {
         $status = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $state.instanceId --query "Reservations[0].Instances[0].State.Name" --output text
         if ($status -eq "running" -or $status -eq "pending") {
+            if (-not $dataVolumeId) {
+                $dataVolumeId = Find-DataVolumeId
+            }
+            if ($dataVolumeId) {
+                $attached = & $script:AwsExe ec2 describe-volumes --region $Region --volume-ids $dataVolumeId `
+                    --query "Volumes[0].Attachments[?InstanceId=='$($state.instanceId)'] | length(@)" --output text
+                if ($attached -eq "0") {
+                    Attach-DataVolume -InstanceId $state.instanceId -VolumeId $dataVolumeId
+                }
+            }
             Write-Host "Instance already running: $($state.instanceId)"
             Write-Host "App URL: http://$($state.publicIp)"
             Write-Host "Use -Replace to redeploy with updated user-data."
@@ -237,12 +321,18 @@ if ($elasticIp) {
 }
 
 $publicIp = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].PublicIpAddress" --output text
+$availabilityZone = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text
+
+$dataVolumeId = Ensure-DataVolume -AvailabilityZone $availabilityZone
+Attach-DataVolume -InstanceId $instanceId -VolumeId $dataVolumeId
 
 @{
     instanceId = $instanceId
     publicIp = $publicIp
     region = $Region
     securityGroupId = $sgId
+    dataVolumeId = $dataVolumeId
+    availabilityZone = $availabilityZone
     launchedAt = (Get-Date).ToString("o")
 } | ConvertTo-Json | Set-Content $StateFile
 
@@ -253,5 +343,5 @@ Write-Host "State saved to $StateFile"
 Write-Host ""
 Write-Host "Free-tier notes:"
 Write-Host "  - t2.micro: 750 hours/month free for 12 months (one instance = always on)"
-Write-Host "  - No RDS/ALB/Elastic IP used to avoid charges"
+Write-Host "  - Postgres data persists on EBS volume $dataVolumeId (survives -Replace redeploys)"
 Write-Host "  - Stop the instance when not demoing to save free-tier hours"
