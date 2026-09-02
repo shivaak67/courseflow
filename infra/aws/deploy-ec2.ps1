@@ -317,28 +317,51 @@ if ($dataVolumeId) {
     $placementAz = Get-DefaultSubnetAz -VpcId $vpcId
 }
 $dataVolumeId = Ensure-DataVolume -AvailabilityZone $placementAz
-$blockDeviceMappings = "[{""DeviceName"":""/dev/sdf"",""Ebs"":{""VolumeId"":""$dataVolumeId"",""DeleteOnTermination"":false}}]"
 
-$launchArgs = @(
-    "ec2", "run-instances",
-    "--region", $Region,
-    "--image-id", $amiId,
-    "--instance-type", $InstanceType,
-    "--placement", "AvailabilityZone=$placementAz",
-    "--block-device-mappings", $blockDeviceMappings,
-    "--security-group-ids", $sgId,
-    "--user-data", $userDataB64,
-    "--metadata-options", "HttpEndpoint=enabled,HttpTokens=optional",
-    "--tag-specifications", "ResourceType=instance,Tags=[{Key=Name,Value=$ProjectName},{Key=Project,Value=$ProjectName}]",
-    "--query", "Instances[0].InstanceId",
-    "--output", "text"
-)
+$runInstancesInput = [ordered]@{
+    ImageId = $amiId
+    InstanceType = $InstanceType
+    Placement = @{ AvailabilityZone = $placementAz }
+    BlockDeviceMappings = @(
+        @{
+            DeviceName = '/dev/sdf'
+            Ebs = @{
+                VolumeId = $dataVolumeId
+                DeleteOnTermination = $false
+            }
+        }
+    )
+    SecurityGroupIds = @($sgId)
+    UserData = $userDataB64
+    MetadataOptions = @{
+        HttpEndpoint = 'enabled'
+        HttpTokens = 'optional'
+    }
+    TagSpecifications = @(
+        @{
+            ResourceType = 'instance'
+            Tags = @(
+                @{ Key = 'Name'; Value = $ProjectName }
+                @{ Key = 'Project'; Value = $ProjectName }
+            )
+        }
+    )
+}
 if ($KeyName) {
-    $launchArgs += @("--key-name", $KeyName)
+    $runInstancesInput.KeyName = $KeyName
 }
 
+$runInstancesPath = Join-Path $env:TEMP "prioritize-run-instances.json"
+$runInstancesJson = $runInstancesInput | ConvertTo-Json -Depth 6 -Compress
+[System.IO.File]::WriteAllText($runInstancesPath, $runInstancesJson)
+$runInstancesUri = "file://$($runInstancesPath.Replace('\', '/'))"
+
 Write-Host "Launching $InstanceType in $Region (free-tier eligible)..."
-$instanceId = & $script:AwsExe @launchArgs
+$instanceId = & $script:AwsExe ec2 run-instances `
+    --region $Region `
+    --cli-input-json $runInstancesUri `
+    --query "Instances[0].InstanceId" `
+    --output text
 if (-not $instanceId -or $instanceId -eq "None") {
     throw "Failed to launch EC2 instance. Check AWS CLI output above."
 }
