@@ -322,15 +322,6 @@ $runInstancesInput = [ordered]@{
     ImageId = $amiId
     InstanceType = $InstanceType
     Placement = @{ AvailabilityZone = $placementAz }
-    BlockDeviceMappings = @(
-        @{
-            DeviceName = '/dev/sdf'
-            Ebs = @{
-                VolumeId = $dataVolumeId
-                DeleteOnTermination = $false
-            }
-        }
-    )
     SecurityGroupIds = @($sgId)
     UserData = $userDataB64
     MetadataOptions = @{
@@ -368,6 +359,7 @@ if (-not $instanceId -or $instanceId -eq "None") {
 Write-Host "Instance $instanceId launched. Waiting for public IP..."
 
 & $script:AwsExe ec2 wait instance-running --region $Region --instance-ids $instanceId
+Attach-DataVolume -InstanceId $instanceId -VolumeId $dataVolumeId
 Start-Sleep -Seconds 5
 
 $elasticIp = if ($localEnv.ContainsKey('PRIORITIZE_ELASTIC_IP') -and $localEnv['PRIORITIZE_ELASTIC_IP']) {
@@ -387,7 +379,7 @@ if ($elasticIp) {
 $publicIp = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].PublicIpAddress" --output text
 $availabilityZone = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text
 
-Write-Host "Data volume $dataVolumeId attached at launch in $availabilityZone"
+Write-Host "Data volume $dataVolumeId attached to $instanceId in $availabilityZone"
 
 @{
     instanceId = $instanceId
