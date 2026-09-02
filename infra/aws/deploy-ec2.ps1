@@ -317,7 +317,15 @@ if ($dataVolumeId) {
     $placementAz = Get-DefaultSubnetAz -VpcId $vpcId
 }
 $dataVolumeId = Ensure-DataVolume -AvailabilityZone $placementAz
-$blockDeviceMappings = "[{`"DeviceName`":`"/dev/sdf`",`"Ebs`":{`"VolumeId`":`"$dataVolumeId`",`"DeleteOnTermination`":false}}]"
+$blockDeviceMappings = (@(
+    @{
+        DeviceName = '/dev/sdf'
+        Ebs = @{
+            VolumeId = $dataVolumeId
+            DeleteOnTermination = $false
+        }
+    }
+) | ConvertTo-Json -Compress -Depth 4)
 
 $launchArgs = @(
     "ec2", "run-instances",
