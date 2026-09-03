@@ -29,7 +29,7 @@ export class ShellComponent {
     { label: 'Insights', path: '/insights', icon: 'bar_chart' },
     { label: 'Reminders', path: '/reminders', icon: 'notifications' },
     { label: 'Focus', path: '/focus', icon: 'center_focus_strong' },
-    { label: 'AI assistant', path: '/assistant', icon: 'smart_toy' },
+    { label: 'Ask AI', path: '/assistant', icon: 'auto_awesome' },
   ];
 
   logout(): void {

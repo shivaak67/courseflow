@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -45,6 +46,7 @@ const LOADING_STAGES = [
 })
 export class AssistantComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
 
   @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
 
@@ -71,6 +73,11 @@ export class AssistantComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshStatus();
+
+    const presetQuestion = this.route.snapshot.queryParamMap.get('q')?.trim();
+    if (presetQuestion) {
+      this.usePrompt(presetQuestion);
+    }
     this.statusPoll = interval(3000)
       .pipe(
         switchMap(() => this.api.getAssistantStatus()),

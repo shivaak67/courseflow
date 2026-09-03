@@ -47,6 +47,12 @@ export class DashboardComponent implements OnInit {
   readonly tasks = signal<TaskDto[]>([]);
   readonly events = signal<CalendarEventDto[]>([]);
 
+  readonly aiPrompts = [
+    'What should I work on today?',
+    'What tasks are overdue?',
+    "What's on my calendar this week?",
+  ];
+
   readonly greeting = computed(() => {
     const hour = new Date().getHours();
     if (hour < 12) {

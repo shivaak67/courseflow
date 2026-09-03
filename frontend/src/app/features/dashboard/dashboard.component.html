@@ -26,6 +26,24 @@
     }
   </div>
 
+  <section class="dash__panel dash__ai">
+    <div>
+      <h2>Ask Prioritize AI</h2>
+      <p class="dash__muted">Plan your day, or ask about your tasks and deadlines.</p>
+      <div class="dash__ai-prompts">
+        @for (prompt of aiPrompts; track prompt) {
+          <a class="dash__ai-chip" routerLink="/assistant" [queryParams]="{ q: prompt }">
+            {{ prompt }}
+          </a>
+        }
+      </div>
+    </div>
+    <a mat-flat-button color="primary" routerLink="/assistant" class="dash__ai-cta">
+      <mat-icon>auto_awesome</mat-icon>
+      Ask AI
+    </a>
+  </section>
+
   <div class="dash__grid">
     <section class="dash__panel">
       <h2>Today's plan</h2>
