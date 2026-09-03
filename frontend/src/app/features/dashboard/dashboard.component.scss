@@ -99,17 +99,21 @@
 }
 
 .dash__ai {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
   margin-bottom: 0.9rem;
   border-color: rgba(11, 110, 106, 0.28);
   background: linear-gradient(135deg, rgba(11, 110, 106, 0.09), rgba(255, 255, 255, 0.78));
 }
 
-.dash__ai h2 {
+.dash__ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 0.35rem;
+}
+
+.dash__ai h2 {
+  margin: 0;
 }
 
 .dash__ai-prompts {
@@ -141,6 +145,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  margin-top: 0;
+  color: var(--prio-teal-deep);
 }
 
 .dash__panel {
@@ -303,7 +309,7 @@
     align-items: flex-start;
   }
 
-  .dash__ai {
+  .dash__ai-head {
     flex-direction: column;
     align-items: flex-start;
   }
