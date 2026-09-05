@@ -13,6 +13,7 @@ import {
 interface DashStat {
   label: string;
   value: number;
+  view: string;
 }
 
 interface PlanItem {
@@ -22,13 +23,16 @@ interface PlanItem {
   endTime?: string;
   title: string;
   subtitle?: string;
+  sortKey: number;
 }
 
 interface DeadlineItem {
   id: string;
   title: string;
   when: string;
-  sortKey: string;
+  sortKey: number;
+  route: string;
+  overdue: boolean;
 }
 
 @Component({
@@ -101,9 +105,9 @@ export class DashboardComponent implements OnInit {
     }
 
     return [
-      { label: 'Due Today', value: dueToday },
-      { label: 'Overdue', value: overdue },
-      { label: 'This Week', value: dueThisWeek },
+      { label: 'Due Today', value: dueToday, view: 'today' },
+      { label: 'Overdue', value: overdue, view: 'overdue' },
+      { label: 'This Week', value: dueThisWeek, view: 'week' },
     ];
   });
 
@@ -124,29 +128,31 @@ export class DashboardComponent implements OnInit {
         endTime: event.allDay ? undefined : formatTime(end),
         title: event.title,
         subtitle: event.description ?? undefined,
+        sortKey: event.allDay ? 0 : start.getTime(),
       });
     }
 
     for (const task of this.tasks()) {
-      if (!task.dueDate || dueDateKey(task.dueDate) !== todayKey || !task.dueTime) {
+      if (!task.dueDate || dueDateKey(task.dueDate) !== todayKey) {
         continue;
       }
       if (task.status === 'COMPLETED' || task.status === 'CANCELLED') {
         continue;
       }
-      const start = taskDateTime(task.dueDate, task.dueTime);
+      const start = taskDateTime(task.dueDate, task.dueTime ?? '23:59');
       if (!start) {
         continue;
       }
       items.push({
         id: `task-${task.id}`,
         kind: 'task',
-        time: formatTime(start),
+        time: task.dueTime ? formatTime(start) : 'Any time',
         title: task.title,
+        sortKey: start.getTime(),
       });
     }
 
-    return items.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+    return items.sort((a, b) => a.sortKey - b.sortKey);
   });
 
   readonly weeklyProgress = computed(() => {
@@ -159,7 +165,7 @@ export class DashboardComponent implements OnInit {
     let done = 0;
 
     for (const task of this.tasks()) {
-      if (!task.dueDate || task.dueDate < weekStartKey || task.dueDate >= weekEndKey) {
+      if (task.status === 'CANCELLED' || !task.dueDate || task.dueDate < weekStartKey || task.dueDate >= weekEndKey) {
         continue;
       }
       total += 1;
@@ -173,8 +179,10 @@ export class DashboardComponent implements OnInit {
   });
 
   readonly upcomingDeadlines = computed((): DeadlineItem[] => {
-    const weekStartKey = toDateKey(startOfWeek(new Date()));
-    const weekEndKey = toDateKey(addDays(startOfWeek(new Date()), 7));
+    const now = new Date();
+    const todayKey = toDateKey(now);
+    const horizon = addDays(startOfDay(now), 7);
+    const horizonKey = toDateKey(horizon);
     const items: DeadlineItem[] = [];
 
     for (const task of this.tasks()) {
@@ -182,19 +190,20 @@ export class DashboardComponent implements OnInit {
       if (
         !isOpen ||
         !task.dueDate ||
-        task.dueDate < weekStartKey ||
-        task.dueDate >= weekEndKey
+        task.dueDate >= horizonKey
       ) {
         continue;
       }
-      const sortKey = task.dueTime
-        ? `${task.dueDate}T${task.dueTime.slice(0, 5)}`
-        : `${task.dueDate}T00:00`;
+      const due = taskDateTime(task.dueDate, task.dueTime ?? '23:59');
+      if (!due) continue;
+      const overdue = task.dueDate < todayKey || (!!task.dueTime && due.getTime() < now.getTime());
       items.push({
         id: `task-${task.id}`,
         title: task.title,
-        when: relativeDueLabel(task.dueDate),
-        sortKey,
+        when: `${overdue ? 'Overdue · ' : ''}${relativeDueLabel(task.dueDate)}${task.dueTime ? ` · ${formatTime(due)}` : ''}`,
+        sortKey: due.getTime(),
+        route: '/tasks',
+        overdue,
       });
     }
 
@@ -202,7 +211,7 @@ export class DashboardComponent implements OnInit {
       const start = new Date(event.startAt);
       const end = new Date(event.endAt);
       const dayKey = toDateKey(start);
-      if (dayKey < weekStartKey || dayKey >= weekEndKey) {
+      if (end.getTime() <= now.getTime() || start.getTime() >= horizon.getTime()) {
         continue;
       }
       items.push({
@@ -211,11 +220,13 @@ export class DashboardComponent implements OnInit {
         when: event.allDay
           ? relativeDueLabel(dayKey)
           : `${relativeDueLabel(dayKey)} · ${formatTimeRange(start, end)}`,
-        sortKey: event.startAt,
+        sortKey: start.getTime(),
+        route: '/calendar',
+        overdue: false,
       });
     }
 
-    return items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    return items.sort((a, b) => a.sortKey - b.sortKey);
   });
 
   ngOnInit(): void {
@@ -225,10 +236,9 @@ export class DashboardComponent implements OnInit {
   reload(): void {
     this.loading.set(true);
     this.error.set(null);
-    const weekStart = startOfWeek(new Date());
-    const weekEnd = addDays(weekStart, 7);
-    const from = weekStart.toISOString();
-    const to = weekEnd.toISOString();
+    const today = startOfDay(new Date());
+    const from = today.toISOString();
+    const to = addDays(today, 7).toISOString();
 
     forkJoin({
       tasks: this.api.listTasks(),
@@ -350,5 +360,5 @@ function relativeDueLabel(dueDate: string): string {
   if (days === 1) {
     return 'Tomorrow';
   }
-  return due.toLocaleDateString(undefined, { weekday: 'long' });
+  return due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
