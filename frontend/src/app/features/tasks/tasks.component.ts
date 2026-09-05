@@ -55,7 +55,8 @@ export class TasksComponent implements OnInit {
         || (this.view() === 'completed' && task.status === 'COMPLETED')
         || (this.view() === 'today' && open && task.dueDate === today)
         || (this.view() === 'week' && open && !!task.dueDate && task.dueDate >= weekStartKey && task.dueDate < weekEndKey)
-        || (this.view() === 'overdue' && open && !!task.dueDate && task.dueDate < today);
+        || (this.view() === 'overdue' && open && !!task.dueDate && (task.dueDate < today
+          || (task.dueDate === today && !!task.dueTime && new Date(`${task.dueDate}T${task.dueTime}`).getTime() < Date.now())));
       return matchesView && `${task.title} ${task.description ?? ''}`.toLocaleLowerCase().includes(query);
     }).sort((a, b) => {
       if (this.sort() === 'title') return a.title.localeCompare(b.title);
