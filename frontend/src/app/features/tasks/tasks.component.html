@@ -20,6 +20,9 @@
         <label class="crud__field">
           <span>Title</span>
           <input type="text" formControlName="title" placeholder="e.g. Draft project brief" />
+          @if (form.controls.title.touched && form.controls.title.invalid) {
+            <small class="tasks__form-msg--error" role="alert">Enter a title of 1–255 characters.</small>
+          }
         </label>
         <label class="crud__field">
           <span>Due date</span>
@@ -41,7 +44,7 @@
           <span>Status</span>
           <select formControlName="status">
             @for (status of statuses; track status) {
-              <option [value]="status">{{ status }}</option>
+              <option [value]="status">{{ statusLabel(status) }}</option>
             }
           </select>
         </label>
@@ -59,6 +62,9 @@
         <label class="crud__field">
           <span>Title</span>
           <input type="text" formControlName="title" placeholder="e.g. Study session" />
+          @if (eventForm.controls.title.touched && eventForm.controls.title.invalid) {
+            <small class="tasks__form-msg--error" role="alert">Enter a title of 1–255 characters.</small>
+          }
         </label>
         <label class="crud__field">
           <span>Start</span>
@@ -89,21 +95,57 @@
   } @else {
     <section class="tasks__section">
       <h2 class="tasks__section-title">Your tasks</h2>
+      <div class="tasks__filters" aria-label="Task filters">
+        <label class="crud__field">
+          <span>Search tasks</span>
+          <input type="search" placeholder="Search title or description" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+        </label>
+        <label class="crud__field">
+          <span>Show</span>
+          <select [ngModel]="view()" (ngModelChange)="view.set($event)">
+            <option value="open">Open tasks</option>
+            <option value="today">Due today</option>
+            <option value="week">Due this week</option>
+            <option value="overdue">Overdue</option>
+            <option value="completed">Completed</option>
+            <option value="all">All tasks</option>
+          </select>
+        </label>
+        <label class="crud__field">
+          <span>Sort by</span>
+          <select [ngModel]="sort()" (ngModelChange)="sort.set($event)">
+            <option value="due">Due date</option>
+            <option value="priority">Priority</option>
+            <option value="title">Title</option>
+          </select>
+        </label>
+        <button mat-stroked-button type="button" (click)="clearFilters()">Clear filters</button>
+      </div>
+      <p class="tasks__section-hint" role="status">Showing {{ visibleTasks().length }} of {{ tasks().length }} tasks</p>
       @if (tasks().length === 0) {
         <div class="prio-empty">
           <div class="prio-empty__mark"><mat-icon>checklist</mat-icon></div>
           <h3>No tasks yet</h3>
           <p>Add a title above to start building your list.</p>
         </div>
+      } @else if (visibleTasks().length === 0) {
+        <div class="prio-empty">
+          <h3>No matching tasks</h3>
+          <p>Try another search or show all tasks.</p>
+          <button mat-stroked-button type="button" (click)="clearFilters()">Show all tasks</button>
+        </div>
       } @else {
         <ul class="crud__list">
-          @for (task of tasks(); track task.id) {
+          @for (task of visibleTasks(); track task.id) {
             <li class="crud__item">
               @if (editingId() === task.id) {
                 <form class="crud__edit" [formGroup]="editForm" (ngSubmit)="saveEdit(task)">
                   <label class="crud__field">
                     <span>Title</span>
                     <input type="text" formControlName="title" />
+                    @if (editForm.controls.title.touched && editForm.controls.title.invalid) {
+                      <small class="tasks__form-msg--error" role="alert">Enter a title of 1–255 characters.</small>
+                    }
                   </label>
                   <label class="crud__field">
                     <span>Due date</span>
@@ -125,7 +167,7 @@
                     <span>Status</span>
                     <select formControlName="status">
                       @for (status of statuses; track status) {
-                        <option [value]="status">{{ status }}</option>
+                          <option [value]="status">{{ statusLabel(status) }}</option>
                       }
                     </select>
                   </label>
@@ -139,7 +181,7 @@
                   <strong>{{ task.title }}</strong>
                   <p>
                     <span class="queue__level" [attr.data-level]="task.priority">{{ task.priority }}</span>
-                    · {{ task.status }}
+                    · {{ statusLabel(task.status) }}
                     @if (task.dueDate) {
                       · due {{ formatDue(task) }}
                     }
