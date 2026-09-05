@@ -6,8 +6,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +21,6 @@ import com.prioritize.repository.UserRepository;
 @Transactional
 public class PhoneVerificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(PhoneVerificationService.class);
     private static final int CODE_LENGTH = 6;
     private static final long CODE_TTL_MINUTES = 15;
 
@@ -103,7 +100,8 @@ public class PhoneVerificationService {
         try {
             smsNotificationService.send(user.getPhoneNumber(), message);
         } catch (NotificationDeliveryException ex) {
-            log.info("SMS not configured — verification code for {} is {}", user.getPhoneNumber(), code);
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Could not send a verification text. Please try again later.");
         }
 
         return toStatus(user);
