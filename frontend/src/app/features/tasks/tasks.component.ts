@@ -209,7 +209,7 @@ export class TasksComponent implements OnInit {
             ),
           );
           this.eventFormSuccess.set('Time block added.');
-          this.eventForm.patchValue({ title: '' });
+          this.eventForm.controls.title.reset('');
           this.prefillEventTimes();
           this.submittingEvent.set(false);
         },
