@@ -41,6 +41,12 @@ export class TasksComponent implements OnInit {
   readonly visibleTasks = computed(() => {
     const query = this.search().trim().toLocaleLowerCase();
     const today = toDatetimeLocalValue(new Date()).slice(0, 10);
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - (weekStart.getDay() + 6) % 7);
+    const weekStartKey = toDatetimeLocalValue(weekStart).slice(0, 10);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const weekEndKey = toDatetimeLocalValue(weekEnd).slice(0, 10);
     const priorityRank = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
     return this.tasks().filter(task => {
       const open = task.status === 'TODO' || task.status === 'IN_PROGRESS';
@@ -48,6 +54,7 @@ export class TasksComponent implements OnInit {
         || (this.view() === 'open' && open)
         || (this.view() === 'completed' && task.status === 'COMPLETED')
         || (this.view() === 'today' && open && task.dueDate === today)
+        || (this.view() === 'week' && open && !!task.dueDate && task.dueDate >= weekStartKey && task.dueDate < weekEndKey)
         || (this.view() === 'overdue' && open && !!task.dueDate && task.dueDate < today);
       return matchesView && `${task.title} ${task.description ?? ''}`.toLocaleLowerCase().includes(query);
     }).sort((a, b) => {
@@ -104,7 +111,7 @@ export class TasksComponent implements OnInit {
 
   ngOnInit(): void {
     const view = this.route.snapshot.queryParamMap.get('view');
-    if (view && ['all', 'open', 'completed', 'today', 'overdue'].includes(view)) this.view.set(view);
+    if (view && ['all', 'open', 'completed', 'today', 'week', 'overdue'].includes(view)) this.view.set(view);
     this.prefillEventTimes();
     this.reload();
   }

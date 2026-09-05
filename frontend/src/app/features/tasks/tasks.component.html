@@ -44,7 +44,7 @@
           <span>Status</span>
           <select formControlName="status">
             @for (status of statuses; track status) {
-              <option [value]="status">{{ status }}</option>
+              <option [value]="status">{{ statusLabel(status) }}</option>
             }
           </select>
         </label>
@@ -105,6 +105,7 @@
           <select [ngModel]="view()" (ngModelChange)="view.set($event)">
             <option value="open">Open tasks</option>
             <option value="today">Due today</option>
+            <option value="week">Due this week</option>
             <option value="overdue">Overdue</option>
             <option value="completed">Completed</option>
             <option value="all">All tasks</option>
