@@ -39,6 +39,11 @@ describe('Dashboard deadlines', () => {
     expect(component.todayPlan().map(t => t.id)).toEqual(['task-timed', 'task-anytime']);
     expect(component.todayPlan()[1].time).toBe('Any time');
   });
+  it('counts a passed due time today as overdue consistently with the deadline list', () => {
+    component.tasks.set([task('late', '2026-09-05', 'TODO', '09:00'), task('later', '2026-09-05', 'TODO', '11:00')]);
+    expect(component.stats().find(stat => stat.label === 'Overdue')?.value).toBe(1);
+    expect(component.upcomingDeadlines().filter(item => item.overdue).length).toBe(1);
+  });
   it('does not count cancelled tasks against weekly completion', () => {
     component.tasks.set([task('cancelled', '2026-09-02', 'CANCELLED'), task('done', '2026-09-02', 'COMPLETED')]);
     expect(component.weeklyProgress()).toEqual({ done: 1, total: 1, percent: 100 });

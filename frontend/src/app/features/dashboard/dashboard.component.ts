@@ -96,7 +96,7 @@ export class DashboardComponent implements OnInit {
       if (task.dueDate === today) {
         dueToday += 1;
       }
-      if (task.dueDate < today) {
+      if (task.dueDate < today || (task.dueDate === today && task.dueTime && (taskDateTime(task.dueDate, task.dueTime)?.getTime() ?? Infinity) < Date.now())) {
         overdue += 1;
       }
       if (task.dueDate >= weekStartKey && task.dueDate < weekEndKey) {
