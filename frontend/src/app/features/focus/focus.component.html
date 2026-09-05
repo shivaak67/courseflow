@@ -29,6 +29,7 @@
       <div class="focus__empty">
         <h3>No open tasks</h3>
         <p>Add a task first, then come back to start a focus session.</p>
+        <a mat-stroked-button routerLink="/tasks">Add a task</a>
       </div>
     </article>
   } @else {
@@ -61,7 +62,7 @@
               }
               <button mat-stroked-button type="button" (click)="stopAndSave()" [disabled]="saving()">
                 <mat-icon>stop</mat-icon>
-                {{ saving() ? 'Saving…' : 'End' }}
+                {{ saving() ? 'Saving…' : 'End & save' }}
               </button>
             </div>
 

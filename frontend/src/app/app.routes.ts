@@ -69,6 +69,7 @@ export const routes: Routes = [
       {
         path: 'focus',
         canActivate: [authGuard],
+        canDeactivate: [(component: { canDeactivate: () => boolean }) => component.canDeactivate()],
         loadComponent: () =>
           import('./features/focus/focus.component').then((m) => m.FocusComponent),
       },
