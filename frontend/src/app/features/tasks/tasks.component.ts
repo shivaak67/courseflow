@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
@@ -16,13 +17,14 @@ const EVENT_LOOKAHEAD_DAYS = 30;
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [ReactiveFormsModule, MatButtonModule, MatIconModule],
+  imports: [FormsModule, ReactiveFormsModule, MatButtonModule, MatIconModule],
   templateUrl: './tasks.component.html',
   styleUrl: './tasks.component.scss',
 })
 export class TasksComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -33,6 +35,41 @@ export class TasksComponent implements OnInit {
   readonly eventFormSuccess = signal<string | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
   readonly events = signal<CalendarEventDto[]>([]);
+  readonly search = signal('');
+  readonly view = signal('open');
+  readonly sort = signal('due');
+  readonly visibleTasks = computed(() => {
+    const query = this.search().trim().toLocaleLowerCase();
+    const today = toDatetimeLocalValue(new Date()).slice(0, 10);
+    const priorityRank = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    return this.tasks().filter(task => {
+      const open = task.status === 'TODO' || task.status === 'IN_PROGRESS';
+      const matchesView = this.view() === 'all'
+        || (this.view() === 'open' && open)
+        || (this.view() === 'completed' && task.status === 'COMPLETED')
+        || (this.view() === 'today' && open && task.dueDate === today)
+        || (this.view() === 'overdue' && open && !!task.dueDate && task.dueDate < today);
+      return matchesView && `${task.title} ${task.description ?? ''}`.toLocaleLowerCase().includes(query);
+    }).sort((a, b) => {
+      if (this.sort() === 'title') return a.title.localeCompare(b.title);
+      if (this.sort() === 'priority') {
+        const diff = priorityRank[a.priority] - priorityRank[b.priority];
+        if (diff) return diff;
+      }
+      const due = (task: TaskDto) => `${task.dueDate ?? '9999-12-31'}T${task.dueTime ?? '23:59:59'}`;
+      return due(a).localeCompare(due(b)) || a.title.localeCompare(b.title);
+    });
+  });
+
+  clearFilters(): void {
+    this.search.set('');
+    this.view.set('all');
+    this.sort.set('due');
+  }
+
+  statusLabel(status: TaskStatus): string {
+    return { TODO: 'To do', IN_PROGRESS: 'In progress', COMPLETED: 'Completed', CANCELLED: 'Cancelled' }[status];
+  }
 
   readonly priorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
   readonly statuses: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
@@ -66,6 +103,8 @@ export class TasksComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    const view = this.route.snapshot.queryParamMap.get('view');
+    if (view && ['all', 'open', 'completed', 'today', 'overdue'].includes(view)) this.view.set(view);
     this.prefillEventTimes();
     this.reload();
   }
@@ -99,6 +138,8 @@ export class TasksComponent implements OnInit {
   }
 
   submit(): void {
+    if (this.saving()) return;
+    this.form.controls.title.setValue(this.form.controls.title.value.trim());
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -126,6 +167,8 @@ export class TasksComponent implements OnInit {
   }
 
   submitEvent(): void {
+    if (this.submittingEvent()) return;
+    this.eventForm.controls.title.setValue(this.eventForm.controls.title.value.trim());
     this.eventFormError.set(null);
     this.eventFormSuccess.set(null);
 
@@ -200,6 +243,7 @@ export class TasksComponent implements OnInit {
   }
 
   saveEdit(task: TaskDto): void {
+    this.editForm.controls.title.setValue(this.editForm.controls.title.value.trim());
     if (this.editForm.invalid) {
       this.editForm.markAllAsTouched();
       return;
