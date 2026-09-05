@@ -1,5 +1,6 @@
 import {
   Component,
+  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -7,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
@@ -46,7 +48,7 @@ const MAX_CUSTOM_MINUTES = 180;
 @Component({
   selector: 'app-focus',
   standalone: true,
-  imports: [FormsModule, MatButtonModule, MatIconModule],
+  imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule],
   templateUrl: './focus.component.html',
   styleUrl: './focus.component.scss',
 })
@@ -149,6 +151,19 @@ export class FocusComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearTimer();
+  }
+
+  canDeactivate(): boolean {
+    if (this.saving()) return false;
+    return !this.isActive() || window.confirm('Your focus session has not been saved. Stay here to end and save it, or leave and discard it?');
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  warnBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.isActive() || this.saving()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   }
 
   reload(): void {
@@ -270,7 +285,7 @@ export class FocusComponent implements OnInit, OnDestroy {
   }
 
   resumeSession(): void {
-    if (this.phase() !== 'paused' || !this.pausedAt) {
+    if (this.saving() || this.phase() !== 'paused' || !this.pausedAt) {
       return;
     }
     this.accumulatedPauseMs += Date.now() - this.pausedAt.getTime();
@@ -280,7 +295,7 @@ export class FocusComponent implements OnInit, OnDestroy {
   }
 
   stopAndSave(): void {
-    if (this.phase() === 'setup' || this.phase() === 'complete') {
+    if (this.saving() || this.phase() === 'setup' || this.phase() === 'complete') {
       return;
     }
     this.clearTimer();
@@ -332,13 +347,19 @@ export class FocusComponent implements OnInit, OnDestroy {
   }
 
   private persistSession(completed: boolean): void {
+    if (this.saving()) return;
     const taskId = this.selectedTaskId();
     const startedAt = this.sessionStartedAt;
     if (!taskId || !startedAt) {
       return;
     }
 
-    const endedAt = new Date();
+    // Freeze the measured work while the request runs and across failed retries.
+    if (!this.pausedAt) this.pausedAt = new Date();
+    this.phase.set('paused');
+    if (this.mode() === 'timer') this.syncRemainingFromElapsed();
+    else this.secondsElapsed.set(Math.floor(this.elapsedMs() / 1000));
+    const endedAt = this.pausedAt;
     const elapsedMinutes = Math.max(1, Math.round(this.elapsedMs() / 60_000));
     const plannedMinutes = Math.max(1, Math.round(this.targetDurationSeconds() / 60));
     const durationMinutes =
@@ -377,9 +398,8 @@ export class FocusComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.saving.set(false);
-          this.error.set('Could not save this focus session. Try again.');
-          this.phase.set('setup');
-          this.resetSession();
+          this.error.set('Could not save this session. Your time is preserved. Select End & save to retry, or Resume to keep working.');
+          this.phase.set('paused');
         },
       });
   }
