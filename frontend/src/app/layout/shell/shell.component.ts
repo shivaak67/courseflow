@@ -33,7 +33,8 @@ export class ShellComponent {
   ];
 
   logout(): void {
-    this.auth.logout();
-    void this.router.navigateByUrl('/auth/login');
+    void this.router.navigateByUrl('/auth/login').then((navigated) => {
+      if (navigated) this.auth.logout();
+    });
   }
 }
