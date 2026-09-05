@@ -140,10 +140,11 @@
   text-decoration: none;
 }
 
-.dash__ai-cta {
+.dash__panel a.dash__ai-cta {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   margin-top: 0;
   color: var(--prio-teal-deep);
