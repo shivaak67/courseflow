@@ -11,7 +11,8 @@ import { RouterLink } from '@angular/router';
       <h1>Terms &amp; Conditions</h1>
       <p>
         By enabling SMS reminders, you agree to receive automated texts from Prioritize about tasks
-        and deadlines. Message and data rates may apply.
+        and deadlines, as well as phone verification codes. Message frequency varies based on
+        the reminders you schedule. Message and data rates may apply.
       </p>
       <p>Reply STOP to opt out or HELP for help.</p>
     </section>
