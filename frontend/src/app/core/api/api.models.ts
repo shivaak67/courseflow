@@ -427,6 +427,7 @@ export interface AssistantMessage {
 export interface AssistantChatRequest {
   message: string;
   history?: AssistantMessage[];
+  timeZone?: string;
 }
 
 export interface AssistantChatResponse {

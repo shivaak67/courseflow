@@ -170,7 +170,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
       .slice(0, -1)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    this.api.chatWithAssistant({ message: latestUserMessage, history }).subscribe({
+    this.api.chatWithAssistant({ message: latestUserMessage, history, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).subscribe({
       next: (response) => {
         this.configured.set(response.enabled);
         this.appendMessage('assistant', response.reply);
