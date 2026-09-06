@@ -30,7 +30,7 @@ import com.prioritize.model.TaskStatus;
 @Component
 public class AssistantToolExecutor {
 
-    private static final ZoneId DISPLAY_ZONE = ZoneId.systemDefault();
+    
     private static final DateTimeFormatter TIME_12H =
             DateTimeFormatter.ofPattern("h:mm a", Locale.US);
 
@@ -120,16 +120,16 @@ public class AssistantToolExecutor {
         return tools;
     }
 
-    public String execute(UUID userId, String toolName, String argumentsJson) {
+    public String execute(UUID userId, String toolName, String argumentsJson, ZoneId zone) {
         try {
             JsonNode args = objectMapper.readTree(argumentsJson == null ? "{}" : argumentsJson);
             return switch (toolName) {
-                case "create_task" -> createTask(userId, args);
-                case "update_task" -> updateTask(userId, args);
+                case "create_task" -> createTask(userId, args, zone);
+                case "update_task" -> updateTask(userId, args, zone);
                 case "complete_task" -> completeTask(userId, args);
                 case "delete_task" -> deleteTask(userId, args);
-                case "create_calendar_event" -> createEvent(userId, args);
-                case "update_calendar_event" -> updateEvent(userId, args);
+                case "create_calendar_event" -> createEvent(userId, args, zone);
+                case "update_calendar_event" -> updateEvent(userId, args, zone);
                 case "delete_calendar_event" -> deleteEvent(userId, args);
                 default -> error("Unknown tool: " + toolName);
             };
@@ -138,14 +138,14 @@ public class AssistantToolExecutor {
         }
     }
 
-    private String createTask(UUID userId, JsonNode args) {
+    private String createTask(UUID userId, JsonNode args, ZoneId zone) {
         String title = requiredText(args, "title");
         TaskRequest request = new TaskRequest(
                 title,
                 optionalText(args, "description"),
                 null,
                 null,
-                parseDueDate(args.get("dueDate")),
+                parseDueDate(args.get("dueDate"), zone),
                 parseDueTime(args.get("dueTime")),
                 null,
                 parsePriority(args.get("priority")),
@@ -154,14 +154,14 @@ public class AssistantToolExecutor {
         return success("Task created", taskSummary(created));
     }
 
-    private String updateTask(UUID userId, JsonNode args) {
+    private String updateTask(UUID userId, JsonNode args, ZoneId zone) {
         TaskResponse existing = findTask(userId, args);
         TaskRequest request = new TaskRequest(
                 optionalText(args, "title") != null ? optionalText(args, "title") : existing.title(),
                 args.has("description") ? optionalText(args, "description") : existing.description(),
                 existing.categoryId(),
                 existing.projectId(),
-                args.has("dueDate") ? parseDueDate(args.get("dueDate")) : existing.dueDate(),
+                args.has("dueDate") ? parseDueDate(args.get("dueDate"), zone) : existing.dueDate(),
                 args.has("dueTime") ? parseDueTime(args.get("dueTime")) : existing.dueTime(),
                 existing.estimatedMinutes(),
                 args.has("priority") ? parsePriority(args.get("priority")) : existing.priority(),
@@ -195,10 +195,10 @@ public class AssistantToolExecutor {
         return success("Task deleted", payload);
     }
 
-    private String createEvent(UUID userId, JsonNode args) {
+    private String createEvent(UUID userId, JsonNode args, ZoneId zone) {
         String title = requiredText(args, "title");
-        Instant startAt = parseInstant(requiredText(args, "startAt"));
-        Instant endAt = parseInstant(requiredText(args, "endAt"));
+        Instant startAt = parseInstant(requiredText(args, "startAt"), zone);
+        Instant endAt = parseInstant(requiredText(args, "endAt"), zone);
         CalendarEventRequest request = new CalendarEventRequest(
                 title,
                 optionalText(args, "description"),
@@ -207,20 +207,20 @@ public class AssistantToolExecutor {
                 endAt,
                 false);
         CalendarEventResponse created = calendarEventService.create(userId, request);
-        return success("Calendar event created", eventSummary(created));
+        return success("Calendar event created", eventSummary(created, zone));
     }
 
-    private String updateEvent(UUID userId, JsonNode args) {
+    private String updateEvent(UUID userId, JsonNode args, ZoneId zone) {
         CalendarEventResponse existing = findEvent(userId, args);
         CalendarEventRequest request = new CalendarEventRequest(
                 optionalText(args, "title") != null ? optionalText(args, "title") : existing.title(),
                 args.has("description") ? optionalText(args, "description") : existing.description(),
                 existing.categoryId(),
-                args.has("startAt") ? parseInstant(requiredText(args, "startAt")) : existing.startAt(),
-                args.has("endAt") ? parseInstant(requiredText(args, "endAt")) : existing.endAt(),
+                args.has("startAt") ? parseInstant(requiredText(args, "startAt"), zone) : existing.startAt(),
+                args.has("endAt") ? parseInstant(requiredText(args, "endAt"), zone) : existing.endAt(),
                 existing.allDay());
         CalendarEventResponse updated = calendarEventService.update(userId, existing.id(), request);
-        return success("Calendar event updated", eventSummary(updated));
+        return success("Calendar event updated", eventSummary(updated, zone));
     }
 
     private String deleteEvent(UUID userId, JsonNode args) {
@@ -305,16 +305,16 @@ public class AssistantToolExecutor {
         return node;
     }
 
-    private ObjectNode eventSummary(CalendarEventResponse event) {
+    private ObjectNode eventSummary(CalendarEventResponse event, ZoneId zone) {
         ObjectNode node = objectMapper.createObjectNode();
         node.put("id", event.id().toString());
         node.put("title", event.title());
-        node.put("startAt", TIME_12H.withZone(DISPLAY_ZONE).format(event.startAt()));
-        node.put("endAt", TIME_12H.withZone(DISPLAY_ZONE).format(event.endAt()));
+        node.put("startAt", TIME_12H.withZone(zone).format(event.startAt()));
+        node.put("endAt", TIME_12H.withZone(zone).format(event.endAt()));
         return node;
     }
 
-    private LocalDate parseDueDate(JsonNode node) {
+    private LocalDate parseDueDate(JsonNode node, ZoneId zone) {
         if (node == null || node.isNull()) {
             return null;
         }
@@ -323,7 +323,7 @@ public class AssistantToolExecutor {
             return null;
         }
         String lower = value.toLowerCase(Locale.US);
-        LocalDate today = LocalDate.now(clock.withZone(DISPLAY_ZONE));
+        LocalDate today = LocalDate.now(clock.withZone(zone));
         if ("today".equals(lower)) {
             return today;
         }
@@ -354,11 +354,11 @@ public class AssistantToolExecutor {
         return LocalTime.parse(value, DateTimeFormatter.ofPattern("h:mma", Locale.US));
     }
 
-    private Instant parseInstant(String value) {
+    private Instant parseInstant(String value, ZoneId zone) {
         try {
             return Instant.parse(value);
         } catch (DateTimeParseException ignored) {
-            return LocalDateTime.parse(value).atZone(DISPLAY_ZONE).toInstant();
+            return LocalDateTime.parse(value).atZone(zone).toInstant();
         }
     }
 
@@ -434,3 +434,4 @@ public class AssistantToolExecutor {
         return Map.of("type", "string", "description", description, "enum", List.of(values));
     }
 }
+

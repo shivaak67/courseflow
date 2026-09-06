@@ -1,0 +1,82 @@
+package com.prioritize.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.time.*;
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.prioritize.config.AiProperties;
+import com.prioritize.dto.*;
+import com.prioritize.exception.ApiException;
+
+class AssistantDateTest {
+    private final Clock clock = Clock.fixed(Instant.parse("2026-09-06T01:30:00Z"), ZoneOffset.UTC);
+    private final UUID userId = UUID.randomUUID();
+    private final LlmClient llm = mock(LlmClient.class);
+    private final TaskService tasks = mock(TaskService.class);
+    private final CalendarEventService events = mock(CalendarEventService.class);
+    private final DashboardService dashboard = mock(DashboardService.class);
+    private final AiProperties properties = new AiProperties();
+    private final AssistantService service = new AssistantService(properties, llm,
+            mock(AssistantToolExecutor.class), tasks, events, dashboard, clock);
+
+    @Test
+    void answersFromClockInUsersZoneEvenWithIncorrectHistoryAndAiEnabled() {
+        properties.setEnabled(true);
+        properties.setApiKey("test");
+        var request = new AssistantChatRequest("whats the date today",
+                List.of(new AssistantMessageDto("assistant", "Today is September 6")), "America/Chicago");
+        assertThat(service.chat(userId, request).reply()).isEqualTo("Today's date is Saturday, September 5, 2026.");
+        verifyNoInteractions(llm, tasks, dashboard);
+    }
+
+    @Test
+    void respectsDateAcrossTimezonesAndFallsBackToUtcForOldClients() {
+        assertThat(service.chat(userId, new AssistantChatRequest("What is today's date?", null, "Asia/Tokyo")).reply())
+                .contains("Sunday, September 6, 2026");
+        assertThat(service.chat(userId, new AssistantChatRequest("date today", null, null)).reply())
+                .contains("Sunday, September 6, 2026");
+        assertThatThrownBy(() -> service.chat(userId, new AssistantChatRequest("date today", null, "invalid")))
+                .isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void modelContextContainsCurrentLocalDateAndZone() {
+        properties.setEnabled(true);
+        properties.setApiKey("test");
+        when(dashboard.summary(userId)).thenReturn(mock(DashboardSummaryResponse.class));
+        when(llm.complete(any(), any())).thenReturn(new LlmCompletion("Ready", List.of()));
+        service.chat(userId, new AssistantChatRequest("Help plan tomorrow", null, "America/Chicago"));
+        ArgumentCaptor<List<Map<String, Object>>> messages = ArgumentCaptor.forClass(List.class);
+        verify(llm).complete(messages.capture(), any());
+        assertThat(messages.getValue().get(0).get("content").toString())
+                .contains("Today key: 2026-09-05", "User timezone: America/Chicago");
+    }
+
+    @Test
+    void toolResolvesTodayUsingRequestTimezone() {
+        var executor = new AssistantToolExecutor(new ObjectMapper(), tasks, events, clock);
+        // Capture the request even though the mocked service returns no response.
+        executor.execute(userId, "create_task", "{\"title\":\"Study\",\"dueDate\":\"today\"}", ZoneId.of("America/Chicago"));
+        ArgumentCaptor<TaskRequest> request = ArgumentCaptor.forClass(TaskRequest.class);
+        verify(tasks).create(eq(userId), request.capture());
+        assertThat(request.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 9, 5));
+    }
+
+    @Test
+    void calendarToolInterpretsLocalTimeInUsersZone() {
+        var executor = new AssistantToolExecutor(new ObjectMapper(), tasks, events, clock);
+        executor.execute(userId, "create_calendar_event",
+                "{\"title\":\"Study\",\"startAt\":\"2026-09-05T16:00:00\",\"endAt\":\"2026-09-05T17:00:00\"}",
+                ZoneId.of("America/Chicago"));
+        ArgumentCaptor<CalendarEventRequest> request = ArgumentCaptor.forClass(CalendarEventRequest.class);
+        verify(events).create(eq(userId), request.capture());
+        assertThat(request.getValue().startAt()).isEqualTo(Instant.parse("2026-09-05T21:00:00Z"));
+    }
+}
