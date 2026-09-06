@@ -24,7 +24,7 @@ interface ChatMessage {
 
 const STARTER_PROMPTS = [
   'What should I focus on today?',
-  'Create a task due today at 4 PM called Revise project',
+  'Create a task due today at 4 PM',
   'What tasks are overdue?',
   "What's on my calendar this week?",
 ];
