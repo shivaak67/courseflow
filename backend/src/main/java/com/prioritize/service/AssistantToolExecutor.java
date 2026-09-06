@@ -30,7 +30,7 @@ import com.prioritize.model.TaskStatus;
 @Component
 public class AssistantToolExecutor {
 
-    
+
     private static final DateTimeFormatter TIME_12H =
             DateTimeFormatter.ofPattern("h:mm a", Locale.US);
 
@@ -434,4 +434,3 @@ public class AssistantToolExecutor {
         return Map.of("type", "string", "description", description, "enum", List.of(values));
     }
 }
-
