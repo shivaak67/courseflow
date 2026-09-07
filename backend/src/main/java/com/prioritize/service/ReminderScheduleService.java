@@ -1,6 +1,9 @@
 package com.prioritize.service;
 
 import java.time.Instant;
+import java.time.Clock;
+import java.time.ZoneId;
+
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -21,6 +24,7 @@ import com.prioritize.model.NotificationChannel;
 import com.prioritize.model.Reminder;
 import com.prioritize.model.ReminderStatus;
 import com.prioritize.repository.ReminderRepository;
+import com.prioritize.repository.UserRepository;
 
 @Service
 @Transactional
@@ -30,21 +34,38 @@ public class ReminderScheduleService {
     private final ReminderContentResolver reminderContentResolver;
     private final ReminderRepository reminderRepository;
     private final ReminderMapper reminderMapper;
+    private final SmsReminderEligibility smsEligibility;
+    private final UserRepository users;
+    private final Clock clock;
 
     public ReminderScheduleService(
             ReminderService reminderService,
             ReminderContentResolver reminderContentResolver,
             ReminderRepository reminderRepository,
-            ReminderMapper reminderMapper) {
+            ReminderMapper reminderMapper, SmsReminderEligibility smsEligibility, UserRepository users, Clock clock) {
         this.reminderService = reminderService;
         this.reminderContentResolver = reminderContentResolver;
         this.reminderRepository = reminderRepository;
         this.reminderMapper = reminderMapper;
+        this.smsEligibility = smsEligibility;
+        this.users = users;
+        this.clock = clock;
     }
 
     public ReminderScheduleResponse schedule(UUID userId, ReminderScheduleRequest request) {
         reminderService.validateRelatedEntityOwned(
                 userId, request.relatedEntityType(), request.relatedEntityId());
+
+        if (request.timeZone() != null && !request.timeZone().isBlank()) {
+            ZoneId zone;
+            try { zone = ZoneId.of(request.timeZone()); }
+            catch (java.time.DateTimeException ex) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid timezone");
+            }
+            var user = users.findById(userId).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+            user.setTimezone(zone.getId());
+            users.save(user);
+        }
 
         Instant eventAt = reminderContentResolver.resolveEventAt(
                 userId, request.relatedEntityType(), request.relatedEntityId());
@@ -53,12 +74,18 @@ public class ReminderScheduleService {
         Set<NotificationChannel> channels = new LinkedHashSet<>(request.channels());
         for (NotificationChannel channel : channels) {
             ReminderService.validateChannelSupportedOrThrow(channel);
+            smsEligibility.validate(userId, channel);
         }
 
-        cancelPendingForEntity(userId, request.relatedEntityType(), request.relatedEntityId());
-
         List<ReminderResponse> created = new ArrayList<>();
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
+        if (offsets.stream().anyMatch(offset -> offset == null || offset <= 0)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Offsets must be positive minutes before the event");
+        }
+        if (offsets.stream().noneMatch(offset -> eventAt.minus(offset, ChronoUnit.MINUTES).isAfter(now))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Those reminder times have already passed. Choose a later deadline or a shorter notice.");
+        }
+        cancelPendingForEntity(userId, request.relatedEntityType(), request.relatedEntityId());
         for (int offsetMinutes : offsets) {
             if (offsetMinutes <= 0) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Offsets must be positive minutes before the event");

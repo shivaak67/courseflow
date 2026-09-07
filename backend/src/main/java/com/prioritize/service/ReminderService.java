@@ -35,6 +35,7 @@ public class ReminderService {
     private final CalendarEventRepository calendarEventRepository;
     private final GoalRepository goalRepository;
     private final ReminderMapper reminderMapper;
+    private final SmsReminderEligibility smsEligibility;
 
     public ReminderService(
             ReminderRepository reminderRepository,
@@ -43,7 +44,7 @@ public class ReminderService {
             RoutineRepository routineRepository,
             CalendarEventRepository calendarEventRepository,
             GoalRepository goalRepository,
-            ReminderMapper reminderMapper) {
+            ReminderMapper reminderMapper, SmsReminderEligibility smsEligibility) {
         this.reminderRepository = reminderRepository;
         this.taskRepository = taskRepository;
         this.scheduleBlockRepository = scheduleBlockRepository;
@@ -51,6 +52,7 @@ public class ReminderService {
         this.calendarEventRepository = calendarEventRepository;
         this.goalRepository = goalRepository;
         this.reminderMapper = reminderMapper;
+        this.smsEligibility = smsEligibility;
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +71,7 @@ public class ReminderService {
     public ReminderResponse create(UUID userId, ReminderRequest request) {
         validateChannelSupported(request.channel());
         validateRelatedEntityOwned(userId, request.relatedEntityType(), request.relatedEntityId());
+        smsEligibility.validate(userId, request.channel());
         Reminder reminder = new Reminder();
         reminder.setUserId(userId);
         reminderMapper.applyCreate(reminder, request);
@@ -84,6 +87,7 @@ public class ReminderService {
             throw new IllegalArgumentException("At least one of reminderAt or channel is required");
         }
         validateChannelSupported(request.channel());
+        smsEligibility.validate(userId, request.channel() != null ? request.channel() : reminder.getChannel());
         reminderMapper.applyUpdate(reminder, request);
         return reminderMapper.toResponse(reminderRepository.save(reminder));
     }

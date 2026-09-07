@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 public record ReminderScheduleRequest(
         @NotNull ReminderEntityType relatedEntityType,
         @NotNull UUID relatedEntityId,
-        @NotEmpty List<Integer> offsetMinutes,
-        @NotEmpty List<NotificationChannel> channels) {
+        @NotEmpty List<@NotNull @jakarta.validation.constraints.Positive Integer> offsetMinutes,
+        @NotEmpty List<@NotNull NotificationChannel> channels,
+        @jakarta.validation.constraints.Size(max = 64) String timeZone) {
 }
