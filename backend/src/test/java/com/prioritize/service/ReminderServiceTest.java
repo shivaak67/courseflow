@@ -66,7 +66,7 @@ class ReminderServiceTest {
                 routineRepository,
                 calendarEventRepository,
                 goalRepository,
-                new ReminderMapper());
+                new ReminderMapper(), org.mockito.Mockito.mock(SmsReminderEligibility.class));
     }
 
     @Test
