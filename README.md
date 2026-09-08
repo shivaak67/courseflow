@@ -2,6 +2,15 @@
 
 Academic productivity platform for college students. Syncs courses and assignments from Canvas LMS, ranks work with a transparent priority engine, and helps students decide what to work on first.
 
+## Screenshots
+
+**Live app:** [theprioritize.com](https://theprioritize.com/)
+
+### Sign in
+
+The live app's sign-in page, captured September 8, 2026.
+
+![Prioritize sign-in page](docs/screenshots/sign-in.png)
 ## Overview
 
 Prioritize connects to Canvas, imports courses and assignments, and combines deadlines, point value, difficulty, estimated effort, and personal priority into a clear work queue. Students get a dashboard, calendar, and “What Should I Work On?” view. Power BI is used separately for historical analytics.
