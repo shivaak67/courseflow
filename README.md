@@ -2,6 +2,15 @@
 
 Personal productivity and planning platform. Organize work as Goals → Projects → Tasks, block time on a schedule, manage calendar events and routines, and track progress with reminders, insights, and time entries.
 
+## Screenshots
+
+**Live app:** [theprioritize.com](https://theprioritize.com/)
+
+### Sign in
+
+The live app's sign-in page, captured September 8, 2026.
+
+![Prioritize sign-in page](docs/screenshots/sign-in.png)
 ## Overview
 
 Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself—there is no Canvas LMS sync, no Google Calendar sync, and no automatic priority / decision engine. The app covers schedule, calendar, routines, reminders, notifications, time tracking, and insights. Power BI can connect separately for historical analytics.
