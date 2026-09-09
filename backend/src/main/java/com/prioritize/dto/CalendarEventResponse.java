@@ -12,5 +12,7 @@ public record CalendarEventResponse(
         Instant endAt,
         boolean allDay,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String canvasKind, String canvasUrl,
+        java.time.LocalDate canvasStartDate, java.time.LocalDate canvasEndDate) {
 }

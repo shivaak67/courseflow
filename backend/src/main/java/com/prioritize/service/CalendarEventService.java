@@ -40,7 +40,13 @@ public class CalendarEventService {
         List<CalendarEvent> events = (from != null && to != null)
                 ? calendarEventRepository.findOverlapping(userId, from, to)
                 : calendarEventRepository.findByUserIdOrderByStartAtAsc(userId);
-        return events.stream().map(calendarEventMapper::toResponse).toList();
+        var combined = new java.util.LinkedHashMap<UUID, CalendarEvent>();
+        events.forEach(e -> combined.put(e.getId(), e));
+        if (from != null) calendarEventRepository.findByUserIdAndCanvasKeyIsNotNull(userId).stream()
+                .filter(e -> e.getCanvasStartDate() != null && !e.getCanvasStartDate().isAfter(to.atZone(java.time.ZoneOffset.UTC).toLocalDate().plusDays(1))
+                    && e.getCanvasEndDate().isAfter(from.atZone(java.time.ZoneOffset.UTC).toLocalDate().minusDays(1)))
+                .forEach(e -> combined.put(e.getId(), e));
+        return combined.values().stream().sorted(java.util.Comparator.comparing(CalendarEvent::getStartAt)).map(calendarEventMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -59,6 +65,7 @@ public class CalendarEventService {
 
     public CalendarEventResponse update(UUID userId, UUID eventId, CalendarEventRequest request) {
         CalendarEvent event = requireOwned(userId, eventId);
+        requireManual(event);
         validateRange(request.startAt(), request.endAt());
         validateCategory(userId, request.categoryId());
         calendarEventMapper.applyUpdate(event, request);
@@ -67,6 +74,7 @@ public class CalendarEventService {
 
     public void delete(UUID userId, UUID eventId) {
         CalendarEvent event = requireOwned(userId, eventId);
+        requireManual(event);
         calendarEventRepository.delete(event);
     }
 
@@ -74,6 +82,10 @@ public class CalendarEventService {
     public CalendarEvent requireOwned(UUID userId, UUID eventId) {
         return calendarEventRepository.findByIdAndUserId(eventId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Calendar event not found"));
+    }
+
+    private void requireManual(CalendarEvent event) {
+        if (event.getCanvasKey() != null) throw new ApiException(HttpStatus.CONFLICT, "Canvas items are read-only. Make changes in Canvas or disconnect the feed in Settings.");
     }
 
     private void validateCategory(UUID userId, UUID categoryId) {

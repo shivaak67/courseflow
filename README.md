@@ -16,6 +16,14 @@ Learn how the app works, then sign in or create an account to plan your own day.
 
 ![Prioritize public landing page](docs/screenshots/landing.png)
 
+### Canvas calendar connection
+
+Connect a private Canvas Calendar Feed in Settings, then view read-only assignment deadlines and course events. These screenshots use a fictional local account and synthetic course data.
+
+![Prioritize Canvas connection settings](docs/screenshots/canvas-settings.png)
+
+![Prioritize Canvas assignment deadline details](docs/screenshots/canvas-calendar.png)
+
 ### Guided first session
 
 Create a task, reserve time, and start Focus with that task selected. Progress preferences are saved per account in the current browser.
@@ -53,7 +61,7 @@ Choose a study duration and review previously logged focus sessions.
 ![Prioritize sign-in page](docs/screenshots/sign-in.png)
 ## Overview
 
-Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself—there is no Canvas LMS sync, no Google Calendar sync, and no automatic priority / decision engine. The app covers schedule, calendar, routines, reminders, notifications, time tracking, and insights. Power BI can connect separately for historical analytics.
+Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself. Canvas Calendar Feed integration imports assignment deadlines and events into your calendar; it does not use the Canvas API or sync grades or submissions. There is no Google Calendar sync or automatic priority engine. The app also covers routines, reminders, notifications, time tracking, and insights. Power BI can connect separately for historical analytics.
 
 ## Features
 
@@ -61,6 +69,7 @@ Prioritize helps you plan and execute work with a clear hierarchy: categories an
 - Public landing page with sign-in and account creation
 - Guided first session: task → calendar time block → Focus
 - Calendar creation and editing with date validation and failed-save recovery
+- Canvas Calendar Feed connection: read-only deadlines/events, automatic refresh, and manual sync
 - Categories, goals, projects, and tasks (manual priority)
 - Schedule blocks (time-blocking) and personal calendar events
 - Recurring routines and occurrences
@@ -198,7 +207,17 @@ Stop with `Ctrl+C` or `docker compose down`. Add `-v` to also remove the databas
 
 GitHub Actions runs backend tests and the frontend production build on pull requests and pushes to `main` and `develop`. A separate job builds both Docker images to catch Dockerfile regressions. Pushes to `develop` that change application files also publish versioned images to GitHub Container Registry. Deployment selects a versioned image on the existing EC2 host.
 
-Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. The September 9 release passed 22 frontend tests, the production build, and browser checks for onboarding, calendar edits, and mobile layout.
+Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. The Canvas release passed 28 frontend tests. Backend tests cover feed parsing, dates, encryption, URL restrictions, bounded downloads, duplicate prevention, failure preservation, and account isolation.
+
+## Connect Canvas
+
+In Canvas, open **Calendar → Calendar Feed** and copy your private iCal link. In Prioritize, open **Settings → Bring Canvas into your day**, paste it, confirm the timezone, and select **Connect Canvas**. No developer key or Canvas password is needed. Currently supports HTTPS calendar-feed links on `*.instructure.com`.
+
+Assignment deadlines and events appear as labeled, read-only calendar entries. Select an entry to view details or open Canvas. Imported deadlines do not become editable tasks or synchronize completion/submission status. Refreshes run about every 30 minutes on a separate scheduler; **Sync now** is available with a one-minute cooldown. Canvas normally provides the previous 30 days and next 366 days and omits undated to-do items. See [Canvas's feed guide](https://community.instructure.com/en/kb/articles/662804-unknown).
+
+Each successful refresh upserts by the Canvas item UID and removes imported copies no longer present in the feed. Failed or malformed downloads keep the previous successful snapshot. Disconnect removes the connection and its imported copies, leaving personal records intact. Canvas exports repeated occurrences individually; feeds containing recurrence rules are rejected rather than partially imported.
+
+Feed URLs are encrypted with AES-GCM and never returned by the API. By default the encryption key is derived with a Canvas-specific label from the existing JWT secret; operators may set a stable `CANVAS_FEED_KEY` environment variable instead. Changing that key requires reconnecting feeds. Keep links, keys, database dumps, and feed contents out of source control. Downloads require HTTPS Canvas hosts, prohibit redirects/private addresses, have a 20-second total wait limit, and are capped at 2 MiB. V10 adds the connection table and import metadata without changing existing personal records.
 
 ## Deployment (AWS)
 

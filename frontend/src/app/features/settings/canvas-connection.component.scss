@@ -1,0 +1,121 @@
+:host {
+  display: block;
+  margin: 1.4rem 0;
+}
+.canvas-card {
+  padding: clamp(20px, 3vw, 32px);
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+h2 {
+  margin: 3px 0;
+  font-size: 1.5rem;
+}
+.canvas-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #fff0ed;
+  color: #ad3f31;
+  font-weight: 800;
+  font-size: 25px;
+}
+p,
+li {
+  line-height: 1.65;
+}
+ol {
+  padding-left: 22px;
+}
+.muted {
+  color: var(--prio-ink-soft, #586b66);
+  font-size: 0.88rem;
+}
+.connection-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  background: #edf5ef;
+  border-radius: 12px;
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.canvas-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+button {
+  border: 1px solid #244f42;
+  background: #244f42;
+  color: white;
+  padding: 11px 16px;
+  border-radius: 9px;
+  font: inherit;
+  cursor: pointer;
+}
+button.secondary {
+  background: transparent;
+  color: #244f42;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+a {
+  color: #244f42;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  max-width: 700px;
+}
+label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+}
+input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px;
+  border: 1px solid #acbdb5;
+  border-radius: 9px;
+  font: inherit;
+  background: white;
+}
+small {
+  font-weight: 400;
+  color: #586b66;
+}
+fieldset button {
+  justify-self: start;
+}
+.canvas-error {
+  padding: 12px;
+  border-radius: 9px;
+  background: #fff1ef;
+  color: #8c302b;
+}
+.canvas-success {
+  color: #24503d;
+}
+.disconnect {
+  border: 1px solid #c9d5cc;
+  padding: 16px;
+  margin-top: 16px;
+  border-radius: 12px;
+}
+:is(a, button, input):focus-visible {
+  outline: 3px solid #bc6a2a;
+  outline-offset: 3px;
+}
