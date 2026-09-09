@@ -43,6 +43,10 @@ export class RemindersComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly offsetOptions = OFFSET_OPTIONS;
+  readonly timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  readonly smsReady = signal(false);
+  readonly emailReady = signal(false);
+  readonly history = computed(() => this.reminders().filter(r => r.status !== 'PENDING').slice(0, 30));
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -54,9 +58,9 @@ export class RemindersComponent implements OnInit {
   readonly reminders = signal<ReminderDto[]>([]);
 
   readonly scheduleForm = this.fb.nonNullable.group({
-    entityKind: ['CALENDAR_EVENT' as 'CALENDAR_EVENT' | 'TASK', Validators.required],
+    entityKind: ['TASK' as 'CALENDAR_EVENT' | 'TASK', Validators.required],
     entityId: ['', Validators.required],
-    emailEnabled: [true],
+    emailEnabled: [false],
     smsEnabled: [false],
     offsets: this.fb.nonNullable.control<number[]>([1_440, 120], Validators.required),
   });
@@ -100,8 +104,17 @@ export class RemindersComponent implements OnInit {
       reminders: this.api.listReminders(),
       tasks: this.api.listTasks(),
       events: this.api.listCalendarEvents(from, to),
+      settings: this.api.getNotificationSettings(),
+      phone: this.api.getPhoneStatus(),
     }).subscribe({
-      next: ({ reminders, tasks, events }) => {
+      next: ({ reminders, tasks, events, settings, phone }) => {
+        this.smsReady.set(settings.smsEnabled && phone.phoneVerified);
+        this.emailReady.set(settings.emailEnabled);
+        this.scheduleForm.patchValue({ smsEnabled: this.smsReady(), emailEnabled: this.emailReady() });
+        if (this.smsReady()) this.scheduleForm.controls.smsEnabled.enable();
+        else this.scheduleForm.controls.smsEnabled.disable();
+        if (this.emailReady()) this.scheduleForm.controls.emailEnabled.enable();
+        else this.scheduleForm.controls.emailEnabled.disable();
         this.reminders.set(reminders);
         this.tasks.set(tasks);
         this.events.set(events);
@@ -164,15 +177,16 @@ export class RemindersComponent implements OnInit {
         relatedEntityId: value.entityId,
         offsetMinutes: value.offsets,
         channels,
+        timeZone: this.timeZone,
       })
       .subscribe({
         next: (response) => {
-          this.reminders.update((list) => [...response.reminders, ...list]);
+          this.reload();
           this.saving.set(false);
           this.saved.set(true);
         },
-        error: () => {
-          this.error.set('Could not schedule reminders.');
+        error: (err) => {
+          this.error.set(err.error?.message ?? 'Could not schedule reminders.');
           this.saving.set(false);
         },
       });
@@ -261,7 +275,7 @@ export class RemindersComponent implements OnInit {
     });
   }
 
-  private entityTitle(reminder: ReminderDto): string {
+  entityTitle(reminder: ReminderDto): string {
     if (reminder.relatedEntityType === 'TASK') {
       return this.tasks().find((task) => task.id === reminder.relatedEntityId)?.title ?? 'Task';
     }

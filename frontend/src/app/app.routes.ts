@@ -3,6 +3,8 @@ import { authGuard } from './core/guards/auth.guard';
 import { ShellComponent } from './layout/shell/shell.component';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', title: 'Prioritize — Make room for what matters', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
+  { path: 'demo', title: 'Explore Prioritize', loadComponent: () => import('./features/landing/demo.component').then(m => m.DemoComponent) },
   {
     path: 'auth/login',
     loadComponent: () =>
@@ -69,6 +71,7 @@ export const routes: Routes = [
       {
         path: 'focus',
         canActivate: [authGuard],
+        canDeactivate: [(component: { canDeactivate: () => boolean }) => component.canDeactivate()],
         loadComponent: () =>
           import('./features/focus/focus.component').then((m) => m.FocusComponent),
       },

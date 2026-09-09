@@ -1,21 +1,9 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-privacy',
   standalone: true,
-  imports: [RouterLink],
-  template: `
-    <section class="legal prio-page">
-      <a routerLink="/settings">← Back to Settings</a>
-      <h1>Privacy Policy</h1>
-      <p>
-        Prioritize uses your phone number only to send SMS reminders you opt in to receive.
-        We do not sell your personal information.
-      </p>
-      <p>Contact support for data requests or deletion.</p>
-    </section>
-  `,
+  templateUrl: './privacy.component.html',
   styles: `
     .legal {
       max-width: 42rem;

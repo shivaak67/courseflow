@@ -169,3 +169,124 @@
     align-items: flex-start;
   }
 }
+.cal__day {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-radius: 6px;
+}
+.add-mark {
+  opacity: 0.55;
+}
+.cal__chip,
+.cal__more {
+  cursor: pointer;
+  min-height: 26px;
+}
+.cal__chip:hover,
+.cal__day:hover {
+  background: #c4e5df;
+}
+.cal__cell--today .cal__day {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+.calendar-hint {
+  font-size: 0.8rem;
+  color: var(--prio-ink-soft);
+  margin-bottom: 0;
+}
+.day-panel {
+  margin-top: 1rem;
+}
+.day-items {
+  list-style: none;
+  padding: 0;
+}
+.day-items button {
+  width: 100%;
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.9rem;
+  border: 1px solid var(--prio-line);
+  background: white;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+.day-items span {
+  font-size: 0.75rem;
+  color: var(--prio-teal);
+}
+.day-items span:last-child {
+  margin-left: auto;
+}
+.calendar-editor {
+  border-top: 1px solid var(--prio-line);
+  padding-top: 1rem;
+}
+.calendar-editor fieldset {
+  padding: 0;
+  margin: 0 0 1rem;
+  border: 0;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+  min-width: 0;
+}
+.calendar-editor label {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+.calendar-editor input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid #9fb7b2;
+  border-radius: 8px;
+  background: white;
+}
+.editor-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+button:focus-visible {
+  outline: 3px solid var(--prio-teal);
+  outline-offset: 2px;
+}
+@media (max-width: 720px) {
+  .cal {
+    padding: 0.6rem;
+  }
+  .cal__grid,
+  .cal__weekdays {
+    gap: 0.15rem;
+  }
+  .cal__cell {
+    padding: 0.2rem;
+    min-height: 5.5rem;
+  }
+  .calendar-editor fieldset {
+    grid-template-columns: 1fr;
+  }
+  .add-mark {
+    display: none;
+  }
+  .cal__chip {
+    font-size: 0.65rem;
+  }
+  .day-items button {
+    flex-wrap: wrap;
+  }
+}

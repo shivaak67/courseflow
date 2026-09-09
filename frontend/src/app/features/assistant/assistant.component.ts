@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +24,7 @@ interface ChatMessage {
 
 const STARTER_PROMPTS = [
   'What should I focus on today?',
-  'Create a task due today at 4 PM called Revise project',
+  'Create a task due today at 4 PM',
   'What tasks are overdue?',
   "What's on my calendar this week?",
 ];
@@ -45,6 +46,7 @@ const LOADING_STAGES = [
 })
 export class AssistantComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
 
   @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
 
@@ -71,6 +73,11 @@ export class AssistantComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshStatus();
+
+    const presetQuestion = this.route.snapshot.queryParamMap.get('q')?.trim();
+    if (presetQuestion) {
+      this.usePrompt(presetQuestion);
+    }
     this.statusPoll = interval(3000)
       .pipe(
         switchMap(() => this.api.getAssistantStatus()),
@@ -163,7 +170,7 @@ export class AssistantComponent implements OnInit, OnDestroy {
       .slice(0, -1)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    this.api.chatWithAssistant({ message: latestUserMessage, history }).subscribe({
+    this.api.chatWithAssistant({ message: latestUserMessage, history, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).subscribe({
       next: (response) => {
         this.configured.set(response.enabled);
         this.appendMessage('assistant', response.reply);

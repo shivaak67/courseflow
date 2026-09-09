@@ -8,5 +8,6 @@ import jakarta.validation.constraints.Size;
 
 public record AssistantChatRequest(
         @NotBlank @Size(max = 2000) String message,
-        @Valid List<AssistantMessageDto> history) {
+        @Valid List<AssistantMessageDto> history,
+        @Size(max = 100) String timeZone) {
 }

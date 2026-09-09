@@ -47,7 +47,8 @@ public class AssistantService {
             After using tools, confirm what you did in plain language.
             Use only the user data provided below. If something is not in the data, say you do not have that information.
             Be concise, practical, and friendly. Prefer short paragraphs or bullet lists when listing items.
-            Today's date is provided in the user data section.
+            The current date and timezone in USER DATA are authoritative for this request.
+            Use them for today, tomorrow, and relative dates, even if earlier chat messages give a different date.
             For tool calls: use dueDate as YYYY-MM-DD (or 'today' / 'tomorrow'), dueTime as HH:MM or h:mm AM/PM,
             and calendar startAt/endAt as ISO-8601 datetimes in the user's local timezone.
             When mentioning times to the user, always use 12-hour clock with AM/PM (for example, 3:30 PM).
@@ -81,11 +82,17 @@ public class AssistantService {
 
     @Transactional
     public AssistantChatResponse chat(UUID userId, AssistantChatRequest request) {
+        ZoneId zone = resolveZone(request.timeZone());
+        if (isDateQuestion(request.message())) {
+            return new AssistantChatResponse("Today's date is "
+                    + DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", Locale.US)
+                            .withZone(zone).format(clock.instant()) + ".", aiProperties.isConfigured());
+        }
         if (!aiProperties.isConfigured()) {
             return new AssistantChatResponse(answerLocally(userId, request.message()), false);
         }
 
-        String context = buildContext(userId);
+        String context = buildContext(userId, zone);
         List<Map<String, Object>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", SYSTEM_PROMPT + "\n\nUSER DATA:\n" + context));
 
@@ -98,11 +105,11 @@ public class AssistantService {
         messages.add(Map.of("role", "user", "content", request.message()));
 
         List<Map<String, Object>> tools = AssistantToolExecutor.toolDefinitions();
-        String reply = runWithTools(userId, messages, tools);
+        String reply = runWithTools(userId, messages, tools, zone);
         return new AssistantChatResponse(reply, true);
     }
 
-    private String runWithTools(UUID userId, List<Map<String, Object>> messages, List<Map<String, Object>> tools) {
+    private String runWithTools(UUID userId, List<Map<String, Object>> messages, List<Map<String, Object>> tools, ZoneId zone) {
         for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
             LlmCompletion completion = llmClient.complete(messages, tools);
 
@@ -113,7 +120,7 @@ public class AssistantService {
             messages.add(buildAssistantToolMessage(completion));
 
             for (LlmToolCall call : completion.toolCalls()) {
-                String result = toolExecutor.execute(userId, call.name(), call.arguments());
+                String result = toolExecutor.execute(userId, call.name(), call.arguments(), zone);
                 messages.add(Map.of(
                         "role", "tool",
                         "tool_call_id", call.id(),
@@ -146,7 +153,7 @@ public class AssistantService {
         return message;
     }
 
-    private String buildContext(UUID userId) {
+    private String buildContext(UUID userId, ZoneId zone) {
         Instant now = clock.instant();
         Instant weekAhead = now.plusSeconds(7L * 24 * 60 * 60);
 
@@ -155,8 +162,9 @@ public class AssistantService {
         List<CalendarEventResponse> events = calendarEventService.list(userId, now, weekAhead);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Today: ").append(DATE_LABEL.format(now)).append('\n');
-        sb.append("Today key: ").append(TODAY_KEY.format(now)).append('\n');
+        sb.append("Today: ").append(DATE_LABEL.withZone(zone).format(now)).append('\n');
+        sb.append("Today key: ").append(TODAY_KEY.withZone(zone).format(now)).append('\n');
+        sb.append("User timezone: ").append(zone.getId()).append('\n');
         sb.append('\n');
 
         sb.append("Dashboard summary:\n");
@@ -201,7 +209,7 @@ public class AssistantService {
             for (TaskResponse task : completed) {
                 sb.append("- [id=").append(task.id()).append("] ").append(task.title());
                 if (task.completedAt() != null) {
-                    sb.append(" (completed ").append(formatInstant(task.completedAt())).append(')');
+                    sb.append(" (completed ").append(formatInstant(task.completedAt(), zone)).append(')');
                 }
                 sb.append('\n');
             }
@@ -216,9 +224,9 @@ public class AssistantService {
                 sb.append("- [id=").append(event.id()).append("] ")
                         .append(event.title())
                         .append(" from ")
-                        .append(formatInstant(event.startAt()))
+                        .append(formatInstant(event.startAt(), zone))
                         .append(" to ")
-                        .append(formatInstant(event.endAt()));
+                        .append(formatInstant(event.endAt(), zone));
                 if (event.allDay()) {
                     sb.append(" (all day)");
                 }
@@ -229,8 +237,23 @@ public class AssistantService {
         return sb.toString().trim();
     }
 
-    private String formatInstant(Instant instant) {
-        return TIME_RANGE_FORMAT.format(instant);
+    private String formatInstant(Instant instant, ZoneId zone) {
+        return TIME_RANGE_FORMAT.withZone(zone).format(instant);
+    }
+
+    static ZoneId resolveZone(String timeZone) {
+        if (timeZone == null || timeZone.isBlank()) return ZoneId.of("UTC");
+        try {
+            return ZoneId.of(timeZone);
+        } catch (java.time.DateTimeException ex) {
+            throw new com.prioritize.exception.ApiException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Invalid timezone");
+        }
+    }
+
+    private static boolean isDateQuestion(String message) {
+        String question = message.toLowerCase(Locale.US).replaceAll("[^a-z ]", "").trim().replaceAll(" +", " ");
+        return question.matches("(what(s| is)? (the )?(date|day)( is it)?( today)?|what(s| is)? today(s)? (date|day)|today(s)? date|date today)");
     }
 
     private String formatTaskDue(TaskResponse task) {

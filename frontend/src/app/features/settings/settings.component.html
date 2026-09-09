@@ -91,7 +91,7 @@
           @if (!phoneVerified()) {
             <div class="settings__verify">
               <p class="settings__verify-lede">
-                Enter the 6-digit code we sent to your phone. In local dev without Twilio, check the backend logs.
+                Enter the 6-digit code we sent to your phone.
               </p>
               <div class="settings__verify-row">
                 <button mat-stroked-button type="button" (click)="sendCode()" [disabled]="sendingCode()">
@@ -146,9 +146,9 @@
           </label>
 
           <p class="settings__legal">
-            <a routerLink="/privacy">Privacy Policy</a>
+            <a href="/privacy">Privacy Policy</a>
             <span aria-hidden="true">|</span>
-            <a routerLink="/terms">Terms &amp; Conditions</a>
+            <a href="/terms">Terms &amp; Conditions</a>
           </p>
 
           <button

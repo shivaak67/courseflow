@@ -10,6 +10,67 @@ COMPOSE_FILE="docker-compose.prod.yml"
 
 echo "=== Prioritize bootstrap starting at $(date -Is) ==="
 
+DATA_MOUNT="/opt/prioritize-data"
+PERSIST_ENV="${DATA_MOUNT}/.env"
+mkdir -p "${DATA_MOUNT}"
+
+echo "=== Mounting persistent data volume ==="
+find_data_device() {
+  if [ -b /dev/sdf ]; then
+    echo /dev/sdf
+    return 0
+  fi
+  if [ -b /dev/xvdf ]; then
+    echo /dev/xvdf
+    return 0
+  fi
+  for disk in /dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_*; do
+    if [ -e "${disk}" ]; then
+      readlink -f "${disk}"
+      return 0
+    fi
+  done
+  local root_disk
+  root_disk=$(lsblk -ndo NAME,MOUNTPOINT | awk '$2=="/" {print $1}' | head -1)
+  lsblk -dpno NAME,TYPE | awk -v root="${root_disk}" '$2=="disk" && $1 !~ root {print $1; exit}'
+}
+
+DATA_DEVICE=""
+for i in $(seq 1 90); do
+  DATA_DEVICE=$(find_data_device || true)
+  if [ -n "${DATA_DEVICE}" ] && [ -b "${DATA_DEVICE}" ]; then
+    break
+  fi
+  sleep 2
+done
+
+if [ -n "${DATA_DEVICE}" ] && [ -b "${DATA_DEVICE}" ]; then
+  if ! blkid "${DATA_DEVICE}" >/dev/null 2>&1; then
+    echo "Formatting new data volume ${DATA_DEVICE}"
+    mkfs.ext4 -F "${DATA_DEVICE}"
+  fi
+  if ! mountpoint -q "${DATA_MOUNT}"; then
+    mount "${DATA_DEVICE}" "${DATA_MOUNT}"
+    UUID=$(blkid -s UUID -o value "${DATA_DEVICE}")
+    if ! grep -q "${UUID}" /etc/fstab 2>/dev/null; then
+      echo "UUID=${UUID} ${DATA_MOUNT} ext4 defaults,nofail 0 2" >> /etc/fstab
+    fi
+  fi
+  echo "Data volume ${DATA_DEVICE} mounted at ${DATA_MOUNT}"
+else
+  echo "ERROR: Persistent data volume not found after waiting."
+  echo "Refusing to start without durable storage."
+  exit 1
+fi
+
+mkdir -p "${DATA_MOUNT}/pgdata"
+if [ -f "${DATA_MOUNT}/pgdata/PG_VERSION" ]; then
+  echo "Found existing Postgres data on persistent volume"
+else
+  echo "No Postgres data yet; database will initialize on first start"
+fi
+chown -R 999:999 "${DATA_MOUNT}/pgdata" 2>/dev/null || true
+
 if ! swapon --show | grep -q /swapfile; then
   fallocate -l 4G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=4096
   chmod 600 /swapfile
@@ -55,46 +116,6 @@ else
   APP_URL="http://${PUBLIC_IP}"
 fi
 echo "Public app URL: ${APP_URL}"
-
-DATA_MOUNT="/opt/prioritize-data"
-PERSIST_ENV="${DATA_MOUNT}/.env"
-mkdir -p "${DATA_MOUNT}"
-
-echo "=== Mounting persistent data volume ==="
-DATA_DEVICE=""
-for i in $(seq 1 60); do
-  if [ -b /dev/sdf ]; then
-    DATA_DEVICE=/dev/sdf
-    break
-  fi
-  ROOT_BASE=$(lsblk -ndo NAME,MOUNTPOINT | awk '$2=="/" {print $1}' | head -1)
-  CANDIDATE=$(lsblk -dpno NAME,TYPE | awk '$2=="disk" {print $1}' | grep -v "/dev/${ROOT_BASE}$" | head -1)
-  if [ -n "${CANDIDATE}" ] && [ -b "${CANDIDATE}" ]; then
-    DATA_DEVICE="${CANDIDATE}"
-    break
-  fi
-  sleep 2
-done
-
-if [ -n "${DATA_DEVICE}" ] && [ -b "${DATA_DEVICE}" ]; then
-  if ! blkid "${DATA_DEVICE}" >/dev/null 2>&1; then
-    echo "Formatting new data volume ${DATA_DEVICE}"
-    mkfs.ext4 -F "${DATA_DEVICE}"
-  fi
-  if ! mountpoint -q "${DATA_MOUNT}"; then
-    mount "${DATA_DEVICE}" "${DATA_MOUNT}"
-    UUID=$(blkid -s UUID -o value "${DATA_DEVICE}")
-    if ! grep -q "${UUID}" /etc/fstab 2>/dev/null; then
-      echo "UUID=${UUID} ${DATA_MOUNT} ext4 defaults,nofail 0 2" >> /etc/fstab
-    fi
-  fi
-  echo "Data volume mounted at ${DATA_MOUNT}"
-else
-  echo "WARNING: No data volume found; database will not survive instance replacement."
-fi
-
-mkdir -p "${DATA_MOUNT}/pgdata"
-chown -R 999:999 "${DATA_MOUNT}/pgdata" 2>/dev/null || true
 
 SAVED_POSTGRES_PASSWORD=""
 SAVED_JWT_SECRET=""

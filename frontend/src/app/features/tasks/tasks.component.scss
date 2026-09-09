@@ -31,9 +31,30 @@
 
 .tasks__task-form {
   display: grid;
-  grid-template-columns: 1.4fr 0.9fr 0.7fr 0.7fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   align-items: end;
+}
+
+.tasks__task-form > :first-child,
+.crud__edit > :first-child {
+  grid-column: 1 / -1;
+}
+
+.tasks__filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 1rem;
+}
+
+.crud__field { min-width: 0; }
+.crud__item-main strong { overflow-wrap: anywhere; }
+
+@media (max-width: 1100px) {
+  .tasks__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crud__item { flex-wrap: wrap; }
 }
 
 .tasks__event-form {
@@ -307,6 +328,7 @@
 
 @media (max-width: 560px) {
   .tasks__task-form,
+  .tasks__filters,
   .crud__edit {
     grid-template-columns: 1fr;
   }

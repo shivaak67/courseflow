@@ -27,7 +27,16 @@
     <p class="reminders__note"><mat-icon>hourglass_top</mat-icon> Loading reminders…</p>
   } @else {
     <section class="reminders__block prio-panel">
-      <h2 class="reminders__heading">Schedule reminders</h2>
+      <h2 class="reminders__heading">Assignment and event reminders</h2>
+      @if (!smsReady()) {
+        <p class="reminders__lede"><a routerLink="/settings">Set up text reminders</a>: add your mobile number, agree to SMS reminders, and verify the code sent to your phone.</p>
+      } @else {
+        <p class="reminders__saved"><mat-icon>verified</mat-icon> Text reminders are ready for your verified number.</p>
+      }
+      @if (!emailReady()) {
+        <p class="reminders__lede">To use email reminders, enable email in <a routerLink="/settings">Settings</a>.</p>
+      }
+      <p class="reminders__lede">Times use {{ timeZone }}. Tasks without a time use 9:00 AM. Past reminder times are skipped.</p>
       <p class="reminders__lede">Pick an event or task, choose when to be notified, and select email and/or SMS.</p>
 
       <form class="reminders__form" [formGroup]="scheduleForm" (ngSubmit)="scheduleReminders()">
@@ -126,6 +135,23 @@
                   </li>
                 }
               </ul>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+    <section class="reminders__block prio-panel">
+      <h2 class="reminders__heading">Recent activity</h2>
+      <p class="reminders__lede">Sent to provider means the message was accepted for sending; it does not confirm delivery to your phone.</p>
+      @if (history().length === 0) {
+        <p>No reminder activity yet.</p>
+      } @else {
+        <ul class="reminders__groups">
+          @for (reminder of history(); track reminder.id) {
+            <li class="reminders__group">
+              <strong>{{ entityTitle(reminder) }}</strong>
+              <p>{{ channelLabel(reminder.channel) }} · {{ formatReminderAt(reminder.reminderAt) }} · {{ reminder.status === 'SENT' ? 'Sent to provider' : reminder.status }}</p>
+              @if (reminder.failureReason) { <p role="status">{{ reminder.failureReason }}</p> }
             </li>
           }
         </ul>

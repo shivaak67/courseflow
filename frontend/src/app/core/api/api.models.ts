@@ -279,6 +279,7 @@ export interface ReminderScheduleRequest {
   relatedEntityId: string;
   offsetMinutes: number[];
   channels: NotificationChannel[];
+  timeZone?: string;
 }
 
 export interface ReminderScheduleResponse {
@@ -427,6 +428,7 @@ export interface AssistantMessage {
 export interface AssistantChatRequest {
   message: string;
   history?: AssistantMessage[];
+  timeZone?: string;
 }
 
 export interface AssistantChatResponse {

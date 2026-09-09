@@ -66,6 +66,28 @@ function Ensure-SecurityGroup {
     return $sgId
 }
 
+function Get-DefaultSubnetAz {
+    param([string]$VpcId)
+    $az = & $script:AwsExe ec2 describe-subnets --region $Region `
+        --filters "Name=vpc-id,Values=$VpcId" "Name=default-for-az,Values=true" `
+        --query "Subnets[0].AvailabilityZone" --output text
+    if (-not $az -or $az -eq "None") {
+        $az = & $script:AwsExe ec2 describe-subnets --region $Region `
+            --filters "Name=vpc-id,Values=$VpcId" `
+            --query "Subnets[0].AvailabilityZone" --output text
+    }
+    if (-not $az -or $az -eq "None") {
+        throw "Could not determine an availability zone in VPC $VpcId"
+    }
+    return $az
+}
+
+function Get-VolumeAvailabilityZone {
+    param([string]$VolumeId)
+    return (& $script:AwsExe ec2 describe-volumes --region $Region --volume-ids $VolumeId `
+        --query "Volumes[0].AvailabilityZone" --output text)
+}
+
 function Get-LatestAmazonLinuxAmi {
     & $script:AwsExe ec2 describe-images --region $Region `
         --owners amazon `
@@ -283,27 +305,61 @@ if ($aiEnabled -eq 'true' -and $aiApiKey) {
 
 $userDataB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($userData))
 
-$launchArgs = @(
-    "ec2", "run-instances",
-    "--region", $Region,
-    "--image-id", $amiId,
-    "--instance-type", $InstanceType,
-    "--security-group-ids", $sgId,
-    "--user-data", $userDataB64,
-    "--metadata-options", "HttpEndpoint=enabled,HttpTokens=optional",
-    "--tag-specifications", "ResourceType=instance,Tags=[{Key=Name,Value=$ProjectName},{Key=Project,Value=$ProjectName}]",
-    "--query", "Instances[0].InstanceId",
-    "--output", "text"
-)
+$persistedState = Get-PersistedState
+if (-not $dataVolumeId) {
+    $dataVolumeId = Find-DataVolumeId
+}
+if ($dataVolumeId) {
+    $placementAz = Get-VolumeAvailabilityZone -VolumeId $dataVolumeId
+} elseif ($persistedState -and $persistedState.availabilityZone) {
+    $placementAz = [string]$persistedState.availabilityZone
+} else {
+    $placementAz = Get-DefaultSubnetAz -VpcId $vpcId
+}
+$dataVolumeId = Ensure-DataVolume -AvailabilityZone $placementAz
+
+$runInstancesInput = [ordered]@{
+    ImageId = $amiId
+    InstanceType = $InstanceType
+    Placement = @{ AvailabilityZone = $placementAz }
+    SecurityGroupIds = @($sgId)
+    UserData = $userDataB64
+    MetadataOptions = @{
+        HttpEndpoint = 'enabled'
+        HttpTokens = 'optional'
+    }
+    TagSpecifications = @(
+        @{
+            ResourceType = 'instance'
+            Tags = @(
+                @{ Key = 'Name'; Value = $ProjectName }
+                @{ Key = 'Project'; Value = $ProjectName }
+            )
+        }
+    )
+}
 if ($KeyName) {
-    $launchArgs += @("--key-name", $KeyName)
+    $runInstancesInput.KeyName = $KeyName
 }
 
+$runInstancesPath = Join-Path $env:TEMP "prioritize-run-instances.json"
+$runInstancesJson = $runInstancesInput | ConvertTo-Json -Depth 6 -Compress
+[System.IO.File]::WriteAllText($runInstancesPath, $runInstancesJson)
+$runInstancesUri = "file://$($runInstancesPath.Replace('\', '/'))"
+
 Write-Host "Launching $InstanceType in $Region (free-tier eligible)..."
-$instanceId = & $script:AwsExe @launchArgs
+$instanceId = & $script:AwsExe ec2 run-instances `
+    --region $Region `
+    --cli-input-json $runInstancesUri `
+    --query "Instances[0].InstanceId" `
+    --output text
+if (-not $instanceId -or $instanceId -eq "None") {
+    throw "Failed to launch EC2 instance. Check AWS CLI output above."
+}
 Write-Host "Instance $instanceId launched. Waiting for public IP..."
 
 & $script:AwsExe ec2 wait instance-running --region $Region --instance-ids $instanceId
+Attach-DataVolume -InstanceId $instanceId -VolumeId $dataVolumeId
 Start-Sleep -Seconds 5
 
 $elasticIp = if ($localEnv.ContainsKey('PRIORITIZE_ELASTIC_IP') -and $localEnv['PRIORITIZE_ELASTIC_IP']) {
@@ -323,8 +379,7 @@ if ($elasticIp) {
 $publicIp = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].PublicIpAddress" --output text
 $availabilityZone = & $script:AwsExe ec2 describe-instances --region $Region --instance-ids $instanceId --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text
 
-$dataVolumeId = Ensure-DataVolume -AvailabilityZone $availabilityZone
-Attach-DataVolume -InstanceId $instanceId -VolumeId $dataVolumeId
+Write-Host "Data volume $dataVolumeId attached to $instanceId in $availabilityZone"
 
 @{
     instanceId = $instanceId
