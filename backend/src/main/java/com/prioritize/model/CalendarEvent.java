@@ -44,6 +44,27 @@ public class CalendarEvent {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name="canvas_key")
+    private String canvasKey;
+    @Column(name="canvas_kind")
+    private String canvasKind;
+    @Column(name="canvas_url")
+    private String canvasUrl;
+    @Column(name="canvas_start_date")
+    private java.time.LocalDate canvasStartDate;
+    @Column(name="canvas_end_date")
+    private java.time.LocalDate canvasEndDate;
+    public String getCanvasKey() { return canvasKey; }
+    public void setCanvasKey(String value) { canvasKey = value; }
+    public String getCanvasKind() { return canvasKind; }
+    public void setCanvasKind(String value) { canvasKind = value; }
+    public String getCanvasUrl() { return canvasUrl; }
+    public void setCanvasUrl(String value) { canvasUrl = value; }
+    public java.time.LocalDate getCanvasStartDate() { return canvasStartDate; }
+    public void setCanvasStartDate(java.time.LocalDate value) { canvasStartDate = value; }
+    public java.time.LocalDate getCanvasEndDate() { return canvasEndDate; }
+    public void setCanvasEndDate(java.time.LocalDate value) { canvasEndDate = value; }
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();

@@ -23,6 +23,31 @@ describe('Interactive calendar', () => {
     component = TestBed.runInInjectionContext(() => new CalendarComponent());
   });
   afterEach(() => component.ngOnDestroy());
+  it('keeps Canvas date-only entries on their source dates regardless of timezone', () => {
+    const event = {
+      canvasStartDate: '2026-11-01',
+      canvasEndDate: '2026-11-03',
+      startAt: '2026-11-01T05:00:00Z',
+      endAt: '2026-11-03T06:00:00Z',
+    } as CalendarEventDto;
+    expect(eventDayKeys(event)).toEqual(['2026-11-01', '2026-11-02']);
+  });
+  it('opens a Canvas item as read-only details without making an edit request', () => {
+    component.loading.set(false);
+    const event = {
+      id: 'canvas-1',
+      canvasKind: 'DEADLINE',
+      title: 'Essay',
+    } as CalendarEventDto;
+    component.events.set([event]);
+    component.editItem(
+      { id: 'chip', entityId: 'canvas-1', kind: 'event', label: 'Essay' },
+      '2026-09-15',
+    );
+    expect(component.canvasDetail()).toEqual(event);
+    expect(component.editor()).toBeNull();
+    expect(api.updateCalendarEvent).not.toHaveBeenCalled();
+  });
   it('retains task details and status when only editing its deadline', () => {
     const task = {
       id: 't',

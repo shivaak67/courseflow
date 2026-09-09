@@ -5,6 +5,7 @@
     <p class="prio-lede">
       Choose a day to make time. Select a task or time block to edit it.
     </p>
+    <a routerLink="/settings">Connect or refresh Canvas in Settings →</a>
   </header>
   @if (error()) {
     <p class="cal__banner cal__banner--error" role="alert">
@@ -71,9 +72,12 @@
                   [class.cal__chip--event]="chip.kind === 'event'"
                   [disabled]="loading() || saving()"
                   (click)="editItem(chip, cell.key)"
-                  [attr.aria-label]="'Edit ' + chip.label"
+                  [class.cal__chip--canvas]="!!chip.canvasKind"
+                  [attr.aria-label]="
+                    (chip.canvasKind ? 'View Canvas ' : 'Edit ') + chip.label
+                  "
                 >
-                  {{ chip.label }}
+                  {{ chip.canvasKind ? "Canvas · " : "" }}{{ chip.label }}
                 </button>
               }
               @if (cell.chips.length > 3) {
@@ -119,12 +123,56 @@
               (click)="editItem(chip, day)"
               [disabled]="saving() || loading()"
             >
-              <span>{{ chip.kind === "task" ? "Task" : "Time block" }}</span>
-              {{ chip.label }} <span>Edit →</span>
+              <span>{{
+                chip.canvasKind === "DEADLINE"
+                  ? "Canvas deadline"
+                  : chip.canvasKind
+                    ? "Canvas event"
+                    : chip.kind === "task"
+                      ? "Task"
+                      : "Time block"
+              }}</span>
+              {{ chip.label }}
+              <span>{{ chip.canvasKind ? "View →" : "Edit →" }}</span>
             </button>
           </li>
         }
       </ul>
+      @if (canvasDetail(); as item) {
+        <article class="canvas-detail">
+          <p class="prio-kicker">
+            {{
+              item.canvasKind === "DEADLINE"
+                ? "Canvas assignment deadline"
+                : "Canvas calendar event"
+            }}
+          </p>
+          <h3>{{ item.title }}</h3>
+          @if (item.canvasStartDate) {
+            <p>All day · {{ item.canvasStartDate }}</p>
+          } @else {
+            <p>
+              {{ item.canvasKind === "DEADLINE" ? "Due" : "Starts" }}
+              {{ item.startAt | date: "medium" }}
+              @if (item.canvasKind !== "DEADLINE") {
+                · Ends {{ item.endAt | date: "medium" }}
+              }
+            </p>
+          }
+          @if (item.description) {
+            <p class="canvas-description">{{ item.description }}</p>
+          }
+          <p>
+            Synced from Canvas. Make changes there; Prioritize refreshes about
+            every 30 minutes.
+          </p>
+          @if (item.canvasUrl) {
+            <a [href]="item.canvasUrl" target="_blank" rel="noopener noreferrer"
+              >Open in Canvas ↗</a
+            >
+          }
+        </article>
+      }
       @if (editor()) {
         <form (ngSubmit)="save()" class="calendar-editor">
           <h3>

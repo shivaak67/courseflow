@@ -1,0 +1,138 @@
+<section class="canvas-card prio-panel" aria-labelledby="canvas-heading">
+  <header>
+    <span class="canvas-mark" aria-hidden="true">C</span>
+    <div>
+      <p class="prio-kicker">Connected calendars</p>
+      <h2 id="canvas-heading">Bring Canvas into your day</h2>
+    </div>
+  </header>
+  <p>
+    See assignment deadlines and course events alongside your own plans. No
+    developer key or Canvas password needed.
+  </p>
+  @if (loading()) {
+    <p role="status">Checking your connection…</p>
+  }
+  @if (error()) {
+    <p role="alert" class="canvas-error">{{ error() }}</p>
+  }
+  @if (!loading() && !status()) {
+    <button type="button" (click)="load()">Retry connection status</button>
+  }
+  @if (status(); as connection) {
+    @if (connection.connected) {
+      <div class="connection-status">
+        <strong>Connected · {{ connection.host }}</strong
+        ><span>{{ connection.itemCount }} imported items</span>
+      </div>
+      <p class="muted">
+        Last updated {{ connection.lastSyncedAt | date: "medium" }} · Refreshes
+        about every 30 minutes.
+      </p>
+      <p class="muted">
+        Calendar timezone: {{ connection.timezone }}. Dates without a time stay
+        on their Canvas date.
+      </p>
+      @if (connection.error) {
+        <p class="canvas-error" role="alert">{{ connection.error }}</p>
+      }
+      <div class="canvas-actions">
+        <button type="button" (click)="sync()" [disabled]="busy()">
+          {{ busy() ? "Working…" : "Sync now" }}
+        </button>
+        <a routerLink="/calendar">View calendar →</a>
+        <button
+          type="button"
+          class="secondary"
+          (click)="editing.set(!editing())"
+          [disabled]="busy()"
+        >
+          {{ editing() ? "Cancel replacement" : "Replace feed" }}
+        </button>
+        <button
+          type="button"
+          class="secondary"
+          (click)="confirmDisconnect.set(true)"
+          [disabled]="busy()"
+        >
+          Disconnect
+        </button>
+      </div>
+      @if (confirmDisconnect()) {
+        <div class="disconnect">
+          <p>
+            Disconnect Canvas and remove its imported copies? Your personal
+            tasks and events stay in Prioritize.
+          </p>
+          <button type="button" (click)="disconnect()" [disabled]="busy()">
+            Disconnect and remove imports
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="confirmDisconnect.set(false)"
+            [disabled]="busy()"
+          >
+            Keep connected
+          </button>
+        </div>
+      }
+    }
+    @if (!connection.connected || editing()) {
+      <ol>
+        <li>Open Canvas and select <strong>Calendar</strong>.</li>
+        <li>Select <strong>Calendar Feed</strong> and copy the link.</li>
+        <li>Paste it below to connect your calendar.</li>
+      </ol>
+      <form (ngSubmit)="connect()">
+        <fieldset [disabled]="busy()">
+          <label
+            >Canvas calendar feed link<input
+              type="password"
+              name="canvasFeedUrl"
+              [(ngModel)]="feedUrl"
+              autocomplete="off"
+              spellcheck="false"
+              required
+              maxlength="2048"
+              placeholder="Paste your private Calendar Feed link"
+          /></label>
+          <label
+            >Calendar timezone<input
+              name="canvasTimezone"
+              [(ngModel)]="timezone"
+              required
+              maxlength="64"
+              placeholder="America/Chicago"
+            /><small
+              >Used for calendar entries that do not specify a timezone.</small
+            ></label
+          >
+          <button type="submit">
+            {{
+              busy()
+                ? "Importing your calendar…"
+                : connection.connected
+                  ? "Replace and import"
+                  : "Connect Canvas"
+            }}
+          </button>
+        </fieldset>
+      </form>
+      <p class="muted">
+        Your feed link is private. It is encrypted on the server and hidden
+        after connection. Currently supports Canvas sites at *.instructure.com.
+      </p>
+    }
+    <p class="muted">
+      Canvas → Prioritize only. Imported items are read-only; update them in
+      Canvas. The feed includes dated assignments and events, not grades,
+      submissions, or undated to-do items. Canvas usually includes the last 30
+      days and next 366 days; items no longer in the feed are removed from this
+      calendar.
+    </p>
+  }
+  @if (message()) {
+    <p role="status" class="canvas-success">{{ message() }}</p>
+  }
+</section>

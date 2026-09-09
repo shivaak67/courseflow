@@ -5,12 +5,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { forkJoin, switchMap } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
+import { CanvasConnectionComponent } from './canvas-connection.component';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, MatButtonModule, MatIconModule, RouterLink],
+  imports: [ReactiveFormsModule, MatButtonModule, MatIconModule, RouterLink, CanvasConnectionComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
