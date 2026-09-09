@@ -20,7 +20,7 @@ public class CalendarEventMapper {
                 event.isAllDay(),
                 event.getCreatedAt(),
                 event.getUpdatedAt(), event.getCanvasKind(), event.getCanvasUrl(),
-                event.getCanvasStartDate(), event.getCanvasEndDate());
+                event.getCanvasStartDate(), event.getCanvasEndDate(), event.isCanvasCompleted());
     }
 
     public void applyCreate(CalendarEvent event, CalendarEventRequest request) {

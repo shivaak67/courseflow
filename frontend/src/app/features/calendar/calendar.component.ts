@@ -78,6 +78,21 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   readonly selectedDay = signal<string | null>(null);
   readonly canvasDetail = signal<CalendarEventDto | null>(null);
+  readonly completingCanvas = signal(false);
+  toggleCanvasComplete(item: CalendarEventDto): void {
+    if (item.canvasKind !== 'DEADLINE' || this.completingCanvas()) return;
+    const completed = !item.canvasCompleted;
+    this.completingCanvas.set(true);
+    this.error.set(null);
+    this.api.setCanvasAssignmentCompleted(item.id, completed).subscribe({
+      next: () => {
+        this.events.update(list => list.map(event => event.id === item.id ? { ...event, canvasCompleted: completed } : event));
+        if (this.canvasDetail()?.id === item.id) this.canvasDetail.set({ ...item, canvasCompleted: completed });
+        this.completingCanvas.set(false);
+      },
+      error: () => { this.completingCanvas.set(false); this.error.set('Could not update assignment completion. Please try again.'); },
+    });
+  }
   readonly editor = signal<'new' | 'event' | 'task' | null>(null);
   readonly saving = signal(false);
   readonly formError = signal('');
@@ -356,7 +371,7 @@ function buildMonthCells(
     for (const key of keys) {
       push(key, {
         id: `event-${event.id}-${key}`,
-        label: event.title,
+        label: (event.canvasCompleted ? '✓ ' : '') + event.title,
         kind: 'event',
         canvasKind: event.canvasKind,
         entityId: event.id,

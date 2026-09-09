@@ -220,18 +220,25 @@
           <p class="tasks__section-hint">Due dates and events for the next 30 days. Synced from Canvas; make changes in Canvas.</p>
           <ul class="tasks__event-list">
             @for (event of group.items; track event.id) {
-              <li class="tasks__event-item tasks__event-item--canvas">
+              <li class="tasks__event-item tasks__event-item--canvas" [class.tasks__event-item--completed]="event.canvasCompleted">
                 <div class="tasks__event-main">
                   <span class="tasks__event-tag">{{ group.label }}</span>
+                  @if (event.canvasKind === 'DEADLINE') { <span>{{ event.canvasCompleted ? 'Completed' : 'To do' }}</span> }
                   <strong>{{ event.title }}</strong>
                   <p>{{ event.canvasKind === 'DEADLINE' ? 'Due ' : '' }}{{ formatEventWhen(event) }}</p>
                 </div>
+                @if (event.canvasKind === 'DEADLINE') {
+                  <button mat-stroked-button type="button" (click)="toggleCanvasComplete(event)" [disabled]="!!completingCanvasId()">
+                    {{ completingCanvasId() === event.id ? 'Saving…' : event.canvasCompleted ? 'Reopen' : 'Complete' }}
+                  </button>
+                }
                 @if (event.canvasUrl) {
                   <a mat-stroked-button [href]="event.canvasUrl" target="_blank" rel="noopener noreferrer">Open in Canvas</a>
                 }
               </li>
             }
           </ul>
+          @if (group.label === 'Assignment') { <p class="tasks__section-hint">Completion is tracked in Prioritize only. It does not submit work or change Canvas.</p> }
         </section>
       }
     }

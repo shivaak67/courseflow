@@ -13,6 +13,10 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "calendar_events")
 public class CalendarEvent {
+    @Column(name = "canvas_completed", nullable = false)
+    private boolean canvasCompleted;
+    public boolean isCanvasCompleted() { return canvasCompleted; }
+    public void setCanvasCompleted(boolean value) { canvasCompleted = value; }
 
     @Id
     private UUID id;

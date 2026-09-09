@@ -14,5 +14,5 @@ public record CalendarEventResponse(
         Instant createdAt,
         Instant updatedAt,
         String canvasKind, String canvasUrl,
-        java.time.LocalDate canvasStartDate, java.time.LocalDate canvasEndDate) {
+        java.time.LocalDate canvasStartDate, java.time.LocalDate canvasEndDate, boolean canvasCompleted) {
 }

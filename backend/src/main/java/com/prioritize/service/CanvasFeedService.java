@@ -65,6 +65,16 @@ public class CanvasFeedService {
         events.deleteAll(events.findByUserIdAndCanvasKeyIsNotNull(userId));
         feeds.deleteById(userId);
     }
+    public void setCompleted(UUID userId, UUID eventId, boolean completed) {
+        // Serialize with feed refresh so neither operation overwrites the other's fields.
+        lock(userId);
+        CalendarEvent event = events.findByIdAndUserId(eventId, userId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Assignment not found."));
+        if (event.getCanvasKey() == null || !"DEADLINE".equals(event.getCanvasKind()))
+            throw new ApiException(HttpStatus.CONFLICT, "Only Canvas assignments have a completion status.");
+        event.setCanvasCompleted(completed);
+        events.save(event);
+    }
     private void apply(UUID userId, CanvasCalendarFeed feed, List<CanvasFeedParser.Item> items) {
         Map<String,CalendarEvent> old=new HashMap<>();
         events.findByUserIdAndCanvasKeyIsNotNull(userId).forEach(e->old.put(e.getCanvasKey(),e));

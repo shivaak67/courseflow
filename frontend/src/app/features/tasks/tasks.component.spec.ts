@@ -11,7 +11,7 @@ describe('Task discovery', () => {
   const task = (id: string, title: string, status = 'TODO', dueDate: string | null = null, priority = 'LOW') =>
     ({ id, title, status, dueDate, priority, description: null, dueTime: null } as TaskDto);
   beforeEach(() => {
-    api = jasmine.createSpyObj('ApiService', ['listTasks', 'listCalendarEvents', 'createTask', 'updateCalendarEvent', 'deleteCalendarEvent']);
+    api = jasmine.createSpyObj('ApiService', ['listTasks', 'listCalendarEvents', 'createTask', 'updateCalendarEvent', 'deleteCalendarEvent', 'setCanvasAssignmentCompleted']);
     api.listTasks.and.returnValue(of([]));
     api.listCalendarEvents.and.returnValue(of([]));
     TestBed.configureTestingModule({ providers: [
@@ -73,4 +73,12 @@ describe('Task discovery', () => {
     api.updateCalendarEvent.calls.reset(); component.saveEventEdit(event('DEADLINE')); component.removeEvent(event('DEADLINE'));
     expect(api.updateCalendarEvent).not.toHaveBeenCalled(); expect(api.deleteCalendarEvent).not.toHaveBeenCalled();
     component.cancelEventEdit(); expect(component.editingEventId()).toBeNull();
+  });  it('completes and reopens Canvas assignments while preserving status on failure', () => {
+    const assignment = event('DEADLINE'); component.events.set([assignment]);
+    api.setCanvasAssignmentCompleted.and.returnValue(of(undefined));
+    component.toggleCanvasComplete(assignment); expect(component.events()[0].canvasCompleted).toBeTrue();
+    component.toggleCanvasComplete(component.events()[0]); expect(component.events()[0].canvasCompleted).toBeFalse();
+    api.setCanvasAssignmentCompleted.and.returnValue(throwError(() => new Error('offline')));
+    component.toggleCanvasComplete(component.events()[0]); expect(component.events()[0].canvasCompleted).toBeFalse();
+    expect(component.error()).toBeTruthy(); expect(component.completingCanvasId()).toBeNull();
   });});
