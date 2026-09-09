@@ -8,6 +8,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/integrations/canvas")
 public class CanvasFeedController {
+    public record CompletionRequest(@jakarta.validation.constraints.NotNull Boolean completed) {}
+    @PutMapping("/assignments/{id}/completion") @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void complete(@PathVariable java.util.UUID id, @Valid @RequestBody CompletionRequest request) {
+        service.setCompleted(current.requireCurrentUserId(), id, request.completed());
+    }
     public record ConnectRequest(@NotBlank @Size(max=2048) String feedUrl,@NotBlank @Size(max=64) String timezone) {}
     private final CanvasFeedService service;
     private final CurrentUserService current;

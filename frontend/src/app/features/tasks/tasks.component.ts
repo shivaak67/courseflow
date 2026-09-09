@@ -38,6 +38,20 @@ export class TasksComponent implements OnInit {
   readonly eventFormSuccess = signal<string | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
   readonly events = signal<CalendarEventDto[]>([]);
+  readonly completingCanvasId = signal<string | null>(null);
+  toggleCanvasComplete(event: CalendarEventDto): void {
+    if (event.canvasKind !== 'DEADLINE' || this.completingCanvasId()) return;
+    const completed = !event.canvasCompleted;
+    this.completingCanvasId.set(event.id);
+    this.error.set(null);
+    this.api.setCanvasAssignmentCompleted(event.id, completed).subscribe({
+      next: () => {
+        this.events.update(list => list.map(item => item.id === event.id ? { ...item, canvasCompleted: completed } : item));
+        this.completingCanvasId.set(null);
+      },
+      error: () => { this.completingCanvasId.set(null); this.error.set('Could not update assignment completion. Please try again.'); },
+    });
+  }
   readonly search = signal('');
   readonly view = signal('open');
   readonly sort = signal('due');

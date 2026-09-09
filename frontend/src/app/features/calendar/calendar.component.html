@@ -147,7 +147,14 @@
                 : "Canvas calendar event"
             }}
           </p>
-          <h3>{{ item.title }}</h3>
+            <h3>{{ item.title }}</h3>
+            @if (item.canvasKind === 'DEADLINE') {
+              <p>{{ item.canvasCompleted ? 'Completed in Prioritize' : 'To do' }}</p>
+              <button type="button" (click)="toggleCanvasComplete(item)" [disabled]="completingCanvas()">
+                {{ completingCanvas() ? 'Saving…' : item.canvasCompleted ? 'Reopen assignment' : 'Mark complete' }}
+              </button>
+              <p>Completion is tracked here only; it does not submit work or change Canvas.</p>
+            }
           @if (item.canvasStartDate) {
             <p>All day · {{ item.canvasStartDate }}</p>
           } @else {

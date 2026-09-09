@@ -49,6 +49,29 @@ class CanvasFeedIntegrationTest {
         ready();when(client.fetch(any())).thenReturn(CanvasFeedParserTest.calendar(""));service.sync(owner,false);
         assertTrue(events.findByUserIdAndCanvasKeyIsNotNull(owner).isEmpty());assertTrue(events.findById(manual.getId()).isPresent());
     }
+    @Test void localCompletionSurvivesRefreshAndCanBeReopened() throws Exception {
+        service.connect(owner,url,"UTC");
+        UUID id=events.findByUserIdAndCanvasKeyIsNotNull(owner).getFirst().getId();
+        mvc.perform(put("/api/integrations/canvas/assignments/"+id+"/completion")
+            .header("Authorization","Bearer "+token).contentType("application/json").content("{\"completed\":true}"))
+            .andExpect(status().isNoContent());
+        ready(); when(client.fetch(any())).thenReturn(feed("Revised essay","20260916T235900Z")); service.sync(owner,false);
+        assertTrue(events.findById(id).orElseThrow().isCanvasCompleted());
+        mvc.perform(get("/api/calendar-events/"+id).header("Authorization","Bearer "+token))
+            .andExpect(jsonPath("$.canvasCompleted").value(true)).andExpect(jsonPath("$.title").value("Revised essay"));
+        service.setCompleted(owner,id,false); assertFalse(events.findById(id).orElseThrow().isCanvasCompleted());
+    }
+    @Test void completionRequiresOwnerAndExplicitBooleanAndRejectsEvents() throws Exception {
+        service.connect(owner,url,"UTC"); UUID id=events.findByUserIdAndCanvasKeyIsNotNull(owner).getFirst().getId();
+        String path="/api/integrations/canvas/assignments/"+id+"/completion";
+        mvc.perform(put(path).contentType("application/json").content("{\"completed\":true}")).andExpect(status().isUnauthorized());
+        mvc.perform(put(path).header("Authorization","Bearer "+otherToken).contentType("application/json").content("{\"completed\":true}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(put(path).header("Authorization","Bearer "+token).contentType("application/json").content("{}"))
+            .andExpect(status().isBadRequest());
+        var event=events.findById(id).orElseThrow(); event.setCanvasKind("EVENT"); events.save(event);
+        assertThrows(RuntimeException.class,()->service.setCompleted(owner,id,true));
+    }
     @Test void failureKeepsLastSnapshotAndSuccessfulSyncClearsError() {
         service.connect(owner,url,"UTC");ready();when(client.fetch(any())).thenReturn("<html>Login</html>");
         assertNotNull(service.sync(owner,false).error());assertEquals(1,events.findByUserIdAndCanvasKeyIsNotNull(owner).size());
