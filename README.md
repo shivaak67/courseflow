@@ -6,9 +6,33 @@ Personal productivity and planning platform. Organize work as Goals → Projects
 
 **Live app:** [theprioritize.com](https://theprioritize.com/)
 
-### Sign in
+Captured from the live app on September 8, 2026.
 
-The live app's sign-in page, captured September 8, 2026.
+### Dashboard
+
+See upcoming deadlines, today's plan, weekly progress, and shortcuts to the AI assistant.
+
+![Prioritize dashboard with deadlines and weekly progress](docs/screenshots/dashboard.png)
+
+### Tasks and time blocks
+
+Create tasks with due dates and priorities, reserve calendar time, and filter existing work.
+
+![Prioritize task and time-block planning](docs/screenshots/tasks.png)
+
+### Calendar
+
+Review task deadlines and time blocks in a monthly view.
+
+![Prioritize monthly calendar](docs/screenshots/calendar.png)
+
+### Focus timer
+
+Choose a study duration and review previously logged focus sessions.
+
+![Prioritize focus timer and recent sessions](docs/screenshots/focus.png)
+
+### Sign in
 
 ![Prioritize sign-in page](docs/screenshots/sign-in.png)
 ## Overview
