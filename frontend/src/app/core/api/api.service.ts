@@ -206,6 +206,10 @@ export class ApiService {
     return this.http.get<ReminderDto[]>(`${this.base}/api/reminders`);
   }
 
+  clearReminderHistory(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/reminders/history`);
+  }
+
   createReminder(body: CreateReminderRequest): Observable<ReminderDto> {
     return this.http.post<ReminderDto>(`${this.base}/api/reminders`, body);
   }

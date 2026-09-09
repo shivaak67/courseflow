@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
-import { TaskDto } from '../../core/api/api.models';
+import { TaskDto, CalendarEventDto } from '../../core/api/api.models';
 import { TasksComponent } from './tasks.component';
 
 describe('Task discovery', () => {
@@ -11,7 +11,7 @@ describe('Task discovery', () => {
   const task = (id: string, title: string, status = 'TODO', dueDate: string | null = null, priority = 'LOW') =>
     ({ id, title, status, dueDate, priority, description: null, dueTime: null } as TaskDto);
   beforeEach(() => {
-    api = jasmine.createSpyObj('ApiService', ['listTasks', 'listCalendarEvents', 'createTask']);
+    api = jasmine.createSpyObj('ApiService', ['listTasks', 'listCalendarEvents', 'createTask', 'updateCalendarEvent', 'deleteCalendarEvent']);
     api.listTasks.and.returnValue(of([]));
     api.listCalendarEvents.and.returnValue(of([]));
     TestBed.configureTestingModule({ providers: [
@@ -46,4 +46,31 @@ describe('Task discovery', () => {
     expect(component.form.controls.title.touched).toBeTrue();
     expect(component.form.controls.title.invalid).toBeTrue();
   });
-});
+  const event = (kind: 'DEADLINE' | 'EVENT' | null = null) => ({ id: 'event', title: 'Essay', canvasKind: kind,
+    startAt: '2026-09-15T18:00:00Z', endAt: '2026-09-15T19:00:00Z', allDay: false,
+    categoryId: 'category', description: 'Keep notes' } as CalendarEventDto);
+  it('keeps imported assignments and events out of time blocks and preserves date-only deadlines', () => {
+    component.events.set([event(), { ...event('DEADLINE'), id: 'due' }, { ...event('EVENT'), id: 'meeting' }]);
+    expect(component.upcomingEvents().map(e => e.id)).toEqual(['event']);
+    expect(component.canvasAssignments().map(e => e.id)).toEqual(['due']);
+    expect(component.canvasEvents().map(e => e.id)).toEqual(['meeting']);
+    expect(component.formatEventWhen({ ...event('DEADLINE'), allDay: true, canvasStartDate: '2026-09-16' })).toBe('2026-09-16 · All day');
+    expect(component.formatEventWhen(event('DEADLINE'))).not.toContain('–');
+  });
+  it('edits blocks while preserving metadata, and rejects invalid ranges', () => {
+    const block = event(); component.events.set([block]); component.startEventEdit(block);
+    component.eventEditForm.patchValue({ title: ' Revised ', startLocal: '2026-09-15T10:00', endLocal: '2026-09-15T09:00' });
+    component.saveEventEdit(block); expect(api.updateCalendarEvent).not.toHaveBeenCalled();
+    component.eventEditForm.patchValue({ endLocal: '2026-09-15T11:00' });
+    api.updateCalendarEvent.and.returnValue(of({ ...block, title: 'Revised' }));
+    component.saveEventEdit(block);
+    expect(api.updateCalendarEvent).toHaveBeenCalledWith('event', jasmine.objectContaining({ title: 'Revised', categoryId: 'category', description: 'Keep notes' }));
+    expect(component.events()[0].title).toBe('Revised'); expect(component.editingEventId()).toBeNull();
+  });
+  it('preserves failed edits and prevents imported record mutations', () => {
+    component.startEventEdit(event()); api.updateCalendarEvent.and.returnValue(throwError(() => new Error('offline')));
+    component.saveEventEdit(event()); expect(component.editingEventId()).toBe('event'); expect(component.eventEditError()).toBeTruthy();
+    api.updateCalendarEvent.calls.reset(); component.saveEventEdit(event('DEADLINE')); component.removeEvent(event('DEADLINE'));
+    expect(api.updateCalendarEvent).not.toHaveBeenCalled(); expect(api.deleteCalendarEvent).not.toHaveBeenCalled();
+    component.cancelEventEdit(); expect(component.editingEventId()).toBeNull();
+  });});

@@ -50,6 +50,7 @@ export class DashboardComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
+  readonly canvasConnected = signal<boolean | null>(null);
   readonly error = signal<string | null>(null);
   readonly tasks = signal<TaskDto[]>([]);
   readonly events = signal<CalendarEventDto[]>([]);
@@ -233,6 +234,10 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.api.getCanvasFeed().subscribe({
+      next: status => this.canvasConnected.set(status.connected),
+      error: () => this.canvasConnected.set(false),
+    });
     this.reload();
   }
 

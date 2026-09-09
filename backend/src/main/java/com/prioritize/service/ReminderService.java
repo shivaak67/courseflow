@@ -60,7 +60,11 @@ public class ReminderService {
         List<Reminder> reminders = status == null
                 ? reminderRepository.findByUserIdOrderByReminderAtDesc(userId)
                 : reminderRepository.findByUserIdAndStatusOrderByReminderAtDesc(userId, status);
-        return reminders.stream().map(reminderMapper::toResponse).toList();
+        return reminders.stream().filter(r -> !r.isHistoryHidden()).map(reminderMapper::toResponse).toList();
+    }
+
+    public void clearHistory(UUID userId) {
+        reminderRepository.clearHistory(userId, List.of(ReminderStatus.SENT, ReminderStatus.FAILED, ReminderStatus.CANCELLED));
     }
 
     @Transactional(readOnly = true)

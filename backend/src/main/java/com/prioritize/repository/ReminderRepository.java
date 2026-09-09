@@ -16,6 +16,10 @@ import com.prioritize.model.ReminderStatus;
 
 public interface ReminderRepository extends JpaRepository<Reminder, UUID> {
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Reminder r SET r.historyHidden = true WHERE r.userId = :userId AND r.status IN :statuses")
+    int clearHistory(@Param("userId") UUID userId, @Param("statuses") List<ReminderStatus> statuses);
+
     Optional<Reminder> findByIdAndUserId(UUID id, UUID userId);
 
     List<Reminder> findByUserIdOrderByReminderAtDesc(UUID userId);

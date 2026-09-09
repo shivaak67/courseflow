@@ -18,6 +18,23 @@
     <p class="dash__banner dash__banner--error" role="alert">{{ message }}</p>
   }
 
+
+
+  @if (canvasConnected() === false) {
+    <section class="dash__panel dash__canvas" aria-labelledby="canvas-welcome">
+      <p class="prio-kicker">Use Canvas for school?</p>
+      <h2 id="canvas-welcome">Bring your assignments into Prioritize</h2>
+      <p>Connect once to see assignment deadlines and course events. No developer key needed.</p>
+      <ol>
+        <li>Open your school's Canvas and choose <strong>Calendar</strong>.</li>
+        <li>Select <strong>Calendar Feed</strong> and copy your private link.</li>
+        <li>Paste the link in Prioritize to import your assignments.</li>
+      </ol>
+      <a mat-flat-button routerLink="/settings">Connect Canvas · Start setup</a>
+      <p class="dash__muted">Your link stays private. Updates flow from Canvas about every 30 minutes.</p>
+    </section>
+  }
+
   @if (!loading() && !error()) { <app-onboarding [tasks]="tasks()" (changed)="reload()" /> }
 
   <div class="dash__stats">

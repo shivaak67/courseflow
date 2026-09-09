@@ -81,9 +81,10 @@
     @if (!connection.connected || editing()) {
       <ol>
         <li>Open Canvas and select <strong>Calendar</strong>.</li>
-        <li>Select <strong>Calendar Feed</strong> and copy the link.</li>
-        <li>Paste it below to connect your calendar.</li>
+        <li>Select <strong>Calendar Feed</strong> in the calendar sidebar and copy the link. On a narrow screen, look below the calendar.</li>
+        <li>Paste it below, check your timezone, and select <strong>Connect Canvas</strong>.</li>
       </ol>
+      <p>After connecting, use <strong>View calendar</strong> to see your deadlines, or open <strong>Tasks → Canvas assignments</strong>. You can set reminders for several assignments at once in Reminders.</p>
       <form (ngSubmit)="connect()">
         <fieldset [disabled]="busy()">
           <label

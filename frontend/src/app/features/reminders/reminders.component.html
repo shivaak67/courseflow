@@ -42,28 +42,28 @@
       <form class="reminders__form" [formGroup]="scheduleForm" (ngSubmit)="scheduleReminders()">
         <label class="crud__field">
           <span>Type</span>
-          <select formControlName="entityKind" (change)="onEntityKindChange()">
-            <option value="CALENDAR_EVENT">Calendar event</option>
+          <select [attr.disabled]="saving() ? true : null" formControlName="entityKind" (change)="onEntityKindChange()">
+            <option value="CALENDAR_EVENT">Canvas assignments and calendar events</option>
             <option value="TASK">Task with due date</option>
           </select>
         </label>
 
-        <label class="crud__field">
-          <span>Item</span>
-          <select formControlName="entityId">
-            <option value="" disabled>Select an item</option>
-            @if (scheduleForm.controls.entityKind.value === 'CALENDAR_EVENT') {
-              @for (event of upcomingEvents(); track event.id) {
-                <option [value]="event.id">{{ event.title }}</option>
-              }
-            } @else {
-              @for (task of schedulableTasks(); track task.id) {
-                <option [value]="task.id">{{ task.title }}</option>
-              }
-            }
-          </select>
-        </label>
-
+        <fieldset class="reminders__picker" [disabled]="saving()">
+          <legend>Choose assignments or events</legend>
+          <div class="reminders__actions">
+            <button mat-stroked-button type="button" (click)="selectAll()" [disabled]="!selectableItems().length">Select all</button>
+            <button mat-stroked-button type="button" (click)="selectedIds.set([])" [disabled]="!selectedIds().length">Clear selection</button>
+            <span role="status">{{ selectedIds().length }} selected</span>
+          </div>
+          <div class="reminders__choices">
+            @for (item of selectableItems(); track item.id) {
+              <label class="reminders__choice">
+                <input type="checkbox" [checked]="selectedIds().includes(item.id)" (change)="toggleItem(item.id)" />
+                <span>{{ item.title }}</span>
+              </label>
+            } @empty { <p>No upcoming items of this type.</p> }
+          </div>
+        </fieldset>
         <div class="reminders__offsets">
           <span class="crud__field-label">Notify me</span>
           <div class="reminders__offset-grid">
@@ -102,6 +102,7 @@
             <span class="reminders__saved"><mat-icon>check_circle</mat-icon> Scheduled</span>
           }
         </div>
+        @if (scheduleMessage(); as message) { <p role="status">{{ message }}</p> }
       </form>
     </section>
 
@@ -142,6 +143,18 @@
     </section>
     <section class="reminders__block prio-panel">
       <h2 class="reminders__heading">Recent activity</h2>
+      @if (hasClearableHistory()) {
+        @if (confirmClearHistory()) {
+          <p>Clear past activity? Upcoming reminders and messages currently sending will stay.</p>
+          <div class="reminders__actions">
+            <button mat-stroked-button type="button" (click)="clearHistory()" [disabled]="clearingHistory()">{{ clearingHistory() ? 'Clearing…' : 'Confirm clear history' }}</button>
+            <button mat-stroked-button type="button" (click)="confirmClearHistory.set(false)" [disabled]="clearingHistory()">Keep history</button>
+          </div>
+        } @else {
+          <button mat-stroked-button type="button" (click)="confirmClearHistory.set(true)">Clear history</button>
+        }
+      }
+      @if (historyMessage(); as message) { <p role="status">{{ message }}</p> }
       <p class="reminders__lede">Sent to provider means the message was accepted for sending; it does not confirm delivery to your phone.</p>
       @if (history().length === 0) {
         <p>No reminder activity yet.</p>
