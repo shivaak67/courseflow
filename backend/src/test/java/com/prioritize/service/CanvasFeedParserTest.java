@@ -34,6 +34,15 @@ class CanvasFeedParserTest {
             event("event-calendar-event-2","Office hours","DTSTART:20260915T090000Z\r\nURL:javascript:alert(1)")),feed,ZoneOffset.UTC);
         assertEquals(1,items.size()); assertNull(items.getFirst().url());
     }
+    @Test void dateOnlyValuesDoNotDependOnTheServerTimezone() {
+        var previous=java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"));
+            var items=parser.parse(calendar(event("event-assignment-1","Essay","DTSTART;VALUE=DATE:20260915")),feed,ZoneId.of("America/Chicago"));
+            assertEquals(LocalDate.of(2026,9,15),items.getFirst().startDate());
+            assertEquals(Instant.parse("2026-09-15T05:00:00Z"),items.getFirst().start());
+        } finally { java.util.TimeZone.setDefault(previous); }
+    }
     @Test void rejectsPartialHtmlDuplicateAndUnsupportedRecurrenceFeeds() {
         String e=event("event-1","Office hours","DTSTART:20260915T090000Z");
         for(String text: new String[]{"<html>Log in</html>",calendar(e).replace("END:VCALENDAR",""),calendar(e+e),

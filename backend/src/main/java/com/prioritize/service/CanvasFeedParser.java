@@ -42,11 +42,11 @@ public class CanvasFeedParser {
                     String uid=event.getUid().getValue();
                     boolean allDay=!event.getDateStart().getValue().hasTime();
                     Instant start=event.getDateStart().getValue().toInstant();
-                    LocalDate startDate=allDay ? start.atZone(zone).toLocalDate() : null;
+                    LocalDate startDate=allDay ? dateOnly(event.getDateStart().getValue()) : null;
                     Instant end=event.getDateEnd()==null ? start : event.getDateEnd().getValue().toInstant();
                     if (event.getDuration()!=null && event.getDateEnd()==null)
                         end=event.getDuration().getValue().add(java.util.Date.from(start)).toInstant();
-                    LocalDate endDate=allDay ? (event.getDateEnd()==null ? startDate.plusDays(1) : end.atZone(zone).toLocalDate()) : null;
+                    LocalDate endDate=allDay ? (event.getDateEnd()==null ? startDate.plusDays(1) : dateOnly(event.getDateEnd().getValue())) : null;
                     if (allDay && !endDate.isAfter(startDate)) throw new IllegalArgumentException();
                     if (allDay) { start=startDate.atStartOfDay(zone).toInstant(); end=endDate.atStartOfDay(zone).toInstant(); }
                     if (end.isBefore(start)) throw new IllegalArgumentException();
@@ -75,6 +75,12 @@ public class CanvasFeedParser {
                     && uri.getUserInfo()==null && (uri.getPort()==-1 || uri.getPort()==443)
                     && !uri.getPath().startsWith("/feeds/") ? value : null;
         } catch (Exception e) { return null; }
+    }
+    private LocalDate dateOnly(biweekly.util.ICalDate value) {
+        // DATE values have no timezone. The library's Date wrapper uses the JVM zone;
+        // use original calendar components instead of converting that wrapper's instant.
+        var raw=value.getRawComponents();
+        return LocalDate.of(raw.getYear(),raw.getMonth(),raw.getDate());
     }
     private String limit(String value,int length) { return value==null ? null : value.substring(0,Math.min(value.length(),length)); }
 }
