@@ -3,7 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, from, of, concatMap, catchError, map, toArray } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
 import {
   CalendarEventDto,
@@ -47,6 +47,28 @@ export class RemindersComponent implements OnInit {
   readonly smsReady = signal(false);
   readonly emailReady = signal(false);
   readonly history = computed(() => this.reminders().filter(r => r.status !== 'PENDING').slice(0, 30));
+  readonly clearingHistory = signal(false);
+  readonly confirmClearHistory = signal(false);
+  readonly historyMessage = signal<string | null>(null);
+  readonly hasClearableHistory = computed(() => this.reminders().some(r => ['SENT', 'FAILED', 'CANCELLED'].includes(r.status)));
+
+  clearHistory(): void {
+    if (this.clearingHistory() || !this.confirmClearHistory()) return;
+    this.clearingHistory.set(true);
+    this.historyMessage.set(null);
+    this.api.clearReminderHistory().subscribe({
+      next: () => {
+        this.reminders.update(list => list.filter(r => !['SENT', 'FAILED', 'CANCELLED'].includes(r.status)));
+        this.clearingHistory.set(false);
+        this.confirmClearHistory.set(false);
+        this.historyMessage.set('Reminder history cleared.');
+      },
+      error: () => {
+        this.clearingHistory.set(false);
+        this.historyMessage.set('Could not clear history. Please try again.');
+      },
+    });
+  }
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -59,7 +81,7 @@ export class RemindersComponent implements OnInit {
 
   readonly scheduleForm = this.fb.nonNullable.group({
     entityKind: ['TASK' as 'CALENDAR_EVENT' | 'TASK', Validators.required],
-    entityId: ['', Validators.required],
+    entityId: [''],
     emailEnabled: [false],
     smsEnabled: [false],
     offsets: this.fb.nonNullable.control<number[]>([1_440, 120], Validators.required),
@@ -127,7 +149,20 @@ export class RemindersComponent implements OnInit {
     });
   }
 
+  readonly selectedIds = signal<string[]>([]);
+  readonly selectedKind = signal<'TASK' | 'CALENDAR_EVENT'>('TASK');
+  readonly scheduleMessage = signal<string | null>(null);
+  readonly selectableItems = computed(() => this.selectedKind() === 'TASK' ? this.schedulableTasks() : this.upcomingEvents());
+
+  toggleItem(id: string): void {
+    this.selectedIds.update(ids => ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id]);
+  }
+
+  selectAll(): void { this.selectedIds.set(this.selectableItems().map(item => item.id)); }
+
   onEntityKindChange(): void {
+    this.selectedKind.set(this.scheduleForm.controls.entityKind.value);
+    this.selectedIds.set([]);
     this.scheduleForm.patchValue({ entityId: '' });
   }
 
@@ -145,6 +180,9 @@ export class RemindersComponent implements OnInit {
   }
 
   scheduleReminders(): void {
+    if (this.saving()) return;
+    const ids = this.selectedIds().filter(id => this.selectableItems().some(item => item.id === id));
+    if (!ids.length) { this.error.set('Select at least one assignment or event.'); return; }
     if (this.scheduleForm.invalid) {
       this.scheduleForm.markAllAsTouched();
       return;
@@ -171,27 +209,28 @@ export class RemindersComponent implements OnInit {
     this.error.set(null);
     this.saved.set(false);
 
-    this.api
-      .scheduleReminders({
-        relatedEntityType: value.entityKind,
-        relatedEntityId: value.entityId,
-        offsetMinutes: value.offsets,
-        channels,
-        timeZone: this.timeZone,
-      })
-      .subscribe({
-        next: (response) => {
-          this.reload();
-          this.saving.set(false);
-          this.saved.set(true);
-        },
-        error: (err) => {
-          this.error.set(err.error?.message ?? 'Could not schedule reminders.');
-          this.saving.set(false);
-        },
+    this.scheduleMessage.set(null);
+    from(ids).pipe(
+      concatMap(id => this.api.scheduleReminders({
+        relatedEntityType: value.entityKind, relatedEntityId: id,
+        offsetMinutes: value.offsets, channels, timeZone: this.timeZone,
+      }).pipe(
+        map(() => ({ id, ok: true, message: '' })),
+        catchError(err => of({ id, ok: false, message: err.error?.message ?? 'Could not schedule reminders.' })),
+      )),
+      toArray(),
+    ).subscribe(results => {
+      const failures = results.filter(result => !result.ok);
+      const count = results.length - failures.length;
+      this.selectedIds.set(failures.map(result => result.id));
+      this.scheduleMessage.set(`Scheduled reminders for ${count} of ${results.length} selected items.`
+        + (failures.length ? ` ${failures.length} could not be scheduled and remain selected. ${failures[0].message}` : ''));
+      this.api.listReminders().subscribe({
+        next: reminders => { this.reminders.set(reminders); this.saving.set(false); },
+        error: () => { this.saving.set(false); this.error.set('Scheduling finished, but activity could not reload. Use Reload to check it.'); },
       });
+    });
   }
-
   cancelReminder(reminder: ReminderDto): void {
     this.api.cancelReminder(reminder.id).subscribe({
       next: (updated) => {

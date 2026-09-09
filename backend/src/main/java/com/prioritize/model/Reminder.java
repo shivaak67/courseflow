@@ -16,6 +16,11 @@ import jakarta.persistence.Table;
 @Table(name = "reminders")
 public class Reminder {
 
+    @Column(name = "history_hidden", nullable = false)
+    private boolean historyHidden;
+
+    public boolean isHistoryHidden() { return historyHidden; }
+
     @Id
     private UUID id;
 

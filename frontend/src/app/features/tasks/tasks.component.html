@@ -213,6 +213,29 @@
       }
     </section>
 
+    @for (group of [{ title: 'Canvas assignments', items: canvasAssignments(), label: 'Assignment' }, { title: 'Canvas events', items: canvasEvents(), label: 'Canvas event' }]; track group.title) {
+      @if (group.items.length) {
+        <section class="tasks__section">
+          <h2 class="tasks__section-title">{{ group.title }}</h2>
+          <p class="tasks__section-hint">Due dates and events for the next 30 days. Synced from Canvas; make changes in Canvas.</p>
+          <ul class="tasks__event-list">
+            @for (event of group.items; track event.id) {
+              <li class="tasks__event-item tasks__event-item--canvas">
+                <div class="tasks__event-main">
+                  <span class="tasks__event-tag">{{ group.label }}</span>
+                  <strong>{{ event.title }}</strong>
+                  <p>{{ event.canvasKind === 'DEADLINE' ? 'Due ' : '' }}{{ formatEventWhen(event) }}</p>
+                </div>
+                @if (event.canvasUrl) {
+                  <a mat-stroked-button [href]="event.canvasUrl" target="_blank" rel="noopener noreferrer">Open in Canvas</a>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+
     <section class="tasks__section">
       <h2 class="tasks__section-title">Your time blocks</h2>
       <p class="tasks__section-hint">Calendar time blocks for the next 30 days.</p>
@@ -226,15 +249,32 @@
         <ul class="tasks__event-list">
           @for (event of upcomingEvents(); track event.id) {
             <li class="tasks__event-item">
+              @if (editingEventId() === event.id) {
+                <form class="crud__edit" [formGroup]="eventEditForm" (ngSubmit)="saveEventEdit(event)">
+                  <label class="crud__field"><span>Title</span><input formControlName="title" /></label>
+                  <label class="crud__field"><span>Start</span><input type="datetime-local" formControlName="startLocal" /></label>
+                  <label class="crud__field"><span>End</span><input type="datetime-local" formControlName="endLocal" /></label>
+                  <label><input type="checkbox" formControlName="allDay" /> All day</label>
+                  @if (eventEditError(); as message) { <p class="tasks__form-msg--error" role="alert">{{ message }}</p> }
+                  <div class="crud__edit-actions">
+                    <button mat-flat-button type="submit" [disabled]="savingEventEdit()">{{ savingEventEdit() ? 'Saving…' : 'Save' }}</button>
+                    <button mat-stroked-button type="button" [disabled]="savingEventEdit()" (click)="cancelEventEdit()">Cancel</button>
+                  </div>
+                </form>
+              } @else {
               <div class="tasks__event-main">
                 <span class="tasks__event-tag">Time block</span>
                 <strong>{{ event.title }}</strong>
                 <p>{{ formatEventWhen(event) }}</p>
               </div>
-              <button mat-stroked-button type="button" (click)="removeEvent(event)">
+              <div class="crud__item-actions">
+              <button mat-stroked-button type="button" [disabled]="savingEventEdit()" (click)="startEventEdit(event)"><mat-icon>edit</mat-icon> Edit</button>
+              <button mat-stroked-button type="button" [disabled]="savingEventEdit()" (click)="removeEvent(event)">
                 <mat-icon>delete</mat-icon>
                 Remove
               </button>
+              </div>
+              }
             </li>
           }
         </ul>

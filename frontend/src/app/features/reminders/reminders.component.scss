@@ -225,3 +225,8 @@
     align-items: flex-start;
   }
 }
+.reminders__picker { grid-column: 1 / -1; min-width: 0; border: 1px solid var(--prio-line); border-radius: 12px; padding: 1rem; }
+.reminders__choices { max-height: 320px; overflow: auto; margin-top: .75rem; }
+.reminders__choice { display: flex; gap: .75rem; align-items: flex-start; padding: .65rem .25rem; }
+.reminders__choice span { overflow-wrap: anywhere; }
+.reminders__choice input { flex-shrink: 0; margin-top: .2rem; }

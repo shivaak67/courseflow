@@ -30,6 +30,9 @@ export class TasksComponent implements OnInit {
   readonly saving = signal(false);
   readonly submittingEvent = signal(false);
   readonly editingId = signal<string | null>(null);
+  readonly editingEventId = signal<string | null>(null);
+  readonly savingEventEdit = signal(false);
+  readonly eventEditError = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly eventFormError = signal<string | null>(null);
   readonly eventFormSuccess = signal<string | null>(null);
@@ -105,10 +108,63 @@ export class TasksComponent implements OnInit {
   });
 
   readonly upcomingEvents = computed(() =>
-    [...this.events()].sort(
+    this.events().filter(event => !event.canvasKind).sort(
       (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
     ),
   );
+
+  readonly canvasAssignments = computed(() => this.events().filter(event => event.canvasKind === 'DEADLINE')
+    .sort((a, b) => a.startAt.localeCompare(b.startAt)));
+  readonly canvasEvents = computed(() => this.events().filter(event => event.canvasKind === 'EVENT')
+    .sort((a, b) => a.startAt.localeCompare(b.startAt)));
+  readonly eventEditForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(255)]],
+    startLocal: ['', Validators.required],
+    endLocal: ['', Validators.required],
+    allDay: [false],
+  });
+
+  startEventEdit(event: CalendarEventDto): void {
+    if (event.canvasKind || this.savingEventEdit()) return;
+    this.editingEventId.set(event.id);
+    this.eventEditError.set(null);
+    this.eventEditForm.reset({ title: event.title, startLocal: toDatetimeLocalValue(new Date(event.startAt)),
+      endLocal: toDatetimeLocalValue(new Date(event.endAt)), allDay: event.allDay });
+  }
+
+  cancelEventEdit(): void {
+    if (!this.savingEventEdit()) this.editingEventId.set(null);
+  }
+
+  saveEventEdit(event: CalendarEventDto): void {
+    if (event.canvasKind || this.savingEventEdit()) return;
+    this.eventEditForm.controls.title.setValue(this.eventEditForm.controls.title.value.trim());
+    this.eventEditError.set(null);
+    if (this.eventEditForm.invalid) {
+      this.eventEditForm.markAllAsTouched();
+      this.eventEditError.set('Enter a title and valid start and end times.');
+      return;
+    }
+    const { title, startLocal, endLocal, allDay } = this.eventEditForm.getRawValue();
+    const startAt = localInputToIso(startLocal), endAt = localInputToIso(endLocal);
+    if (!startAt || !endAt || new Date(endAt) <= new Date(startAt)) {
+      this.eventEditError.set('End must be after start.');
+      return;
+    }
+    this.savingEventEdit.set(true);
+    this.api.updateCalendarEvent(event.id, { title, startAt, endAt, allDay,
+      description: event.description, categoryId: event.categoryId }).subscribe({
+      next: updated => {
+        this.events.update(list => list.map(item => item.id === updated.id ? updated : item));
+        this.savingEventEdit.set(false);
+        this.editingEventId.set(null);
+      },
+      error: () => {
+        this.savingEventEdit.set(false);
+        this.eventEditError.set('Could not update the time block. Your changes are still here; try again.');
+      },
+    });
+  }
 
   ngOnInit(): void {
     const view = this.route.snapshot.queryParamMap.get('view');
@@ -226,6 +282,7 @@ export class TasksComponent implements OnInit {
   }
 
   removeEvent(event: CalendarEventDto): void {
+    if (event.canvasKind || this.savingEventEdit()) return;
     this.error.set(null);
     this.api.deleteCalendarEvent(event.id).subscribe({
       next: () => {
@@ -324,6 +381,7 @@ export class TasksComponent implements OnInit {
   }
 
   formatEventWhen(event: CalendarEventDto): string {
+    if (event.allDay) return `${event.canvasStartDate ?? toDatetimeLocalValue(new Date(event.startAt)).slice(0, 10)} · All day`;
     const start = new Date(event.startAt);
     const end = new Date(event.endAt);
     const date = start.toLocaleDateString(undefined, {
@@ -333,7 +391,9 @@ export class TasksComponent implements OnInit {
     });
     const time = (d: Date) =>
       d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-    return `${date} · ${time(start)} – ${time(end)}`;
+    if (event.canvasKind === 'DEADLINE') return `${date} at ${time(start)}`;
+    const endDate = end.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    return `${date} · ${time(start)} – ${date === endDate ? '' : endDate + ' · '}${time(end)}`;
   }
 
   private prefillEventTimes(): void {

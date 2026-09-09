@@ -50,6 +50,12 @@ public class ReminderController {
         return reminderService.list(userId, status);
     }
 
+    @DeleteMapping("/history")
+    public ResponseEntity<Void> clearHistory() {
+        reminderService.clearHistory(currentUserService.requireCurrentUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     public ResponseEntity<ReminderResponse> create(@Valid @RequestBody ReminderRequest request) {
         UUID userId = currentUserService.requireCurrentUserId();
