@@ -6,7 +6,27 @@ Personal productivity and planning platform. Organize work as Goals → Projects
 
 **Live app:** [theprioritize.com](https://theprioritize.com/)
 
-Captured from the live app on September 8, 2026.
+**Try it without an account:** [interactive demo](https://theprioritize.com/demo) · **Current release:** [main branch](https://github.com/shivaak67/prioritize/tree/main)
+
+The landing page, dashboard, demo, and calendar captures were refreshed on September 9, 2026. The guided first-session capture uses a local fictional account; demo captures use fictional in-memory data. The existing tasks, Focus, and sign-in captures are from the live app on September 8, 2026.
+
+### Public overview
+
+Understand the app and explore it before signing in.
+
+![Prioritize public landing page](docs/screenshots/landing.png)
+
+### Interactive demo
+
+Try sample tasks, calendar edits, and a Focus timer without creating an account. Changes reset when you leave or reload the demo.
+
+![Prioritize interactive demo with fictional sample tasks](docs/screenshots/demo.png)
+
+### Guided first session
+
+Create a task, reserve time, and start Focus with that task selected. Progress preferences are saved per account in the current browser.
+
+![Prioritize first-session guide using a fictional local account](docs/screenshots/onboarding.png)
 
 ### Dashboard
 
@@ -22,9 +42,11 @@ Create tasks with due dates and priorities, reserve calendar time, and filter ex
 
 ### Calendar
 
-Review task deadlines and time blocks in a monthly view.
+Select a date to add a time block or select an existing task/event to edit it. This capture shows the public demo calendar with fictional data.
 
 ![Prioritize monthly calendar](docs/screenshots/calendar.png)
+
+![Prioritize selected-day task editor](docs/screenshots/calendar-edit.png)
 
 ### Focus timer
 
@@ -42,6 +64,9 @@ Prioritize helps you plan and execute work with a clear hierarchy: categories an
 ## Features
 
 - Email/password and Google OAuth authentication (JWT)
+- Public landing page and interactive demo with isolated fictional data
+- Guided first session: task → calendar time block → Focus
+- Calendar creation and editing with date validation and failed-save recovery
 - Categories, goals, projects, and tasks (manual priority)
 - Schedule blocks (time-blocking) and personal calendar events
 - Recurring routines and occurrences
@@ -73,7 +98,7 @@ See [docs/architecture.md](docs/architecture.md) for schema, auth flow, and phas
 | Auth | JWT + Google OAuth 2.0 / OIDC |
 | Analytics | Power BI |
 | DevOps | Docker, Docker Compose, GitHub Actions |
-| Cloud | AWS (S3 + CloudFront, compute, RDS) |
+| Cloud | AWS EC2 + EBS; PostgreSQL runs in Docker on EC2 |
 
 ## Project Structure
 
@@ -177,14 +202,20 @@ Stop with `Ctrl+C` or `docker compose down`. Add `-v` to also remove the databas
 
 ## CI/CD
 
-GitHub Actions builds and tests the backend (`./mvnw -B test`) and frontend (`npm ci` / `npm run build`) on pull requests and pushes to `main` and `develop`. A separate job builds Docker images for `backend` and `frontend` to catch Dockerfile regressions. Deployment workflows for AWS come after the MVP.
+GitHub Actions runs backend tests and the frontend production build on pull requests and pushes to `main` and `develop`. A separate job builds both Docker images to catch Dockerfile regressions. Pushes to `develop` that change application files also publish versioned images to GitHub Container Registry. Deployment selects a versioned image on the existing EC2 host.
+
+Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. The September 9 release passed 24 frontend tests, the production build, and browser checks for onboarding, calendar edits, demo isolation, and mobile layout.
 
 ## Deployment (AWS)
 
-- Frontend: S3 + CloudFront
-- Backend: EC2 (or equivalent compute)
-- Database: Amazon RDS (PostgreSQL)
-- Secrets: environment variables / AWS Secrets Manager
+- Host: one AWS EC2 instance running Docker Compose
+- Frontend: Angular build served by nginx, with API/OAuth requests proxied to Spring Boot
+- Backend: Spring Boot container on the same EC2 host
+- Database: PostgreSQL 16 container with data on a mounted EBS volume
+- Releases: GitHub Actions → GHCR versioned images → EC2 deployment through AWS Systems Manager
+- Configuration: environment variables supplied on the server
+
+This is the live topology verified on September 9, 2026. EBS persistence is separate from backups; the single host remains a shared failure point. See `docker-compose.prod.yml` and `infra/` for deployment configuration.
 
 ## Analytics (Power BI)
 
