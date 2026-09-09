@@ -1,0 +1,1 @@
+ALTER TABLE calendar_events ADD COLUMN canvas_completed BOOLEAN NOT NULL DEFAULT FALSE;

@@ -167,6 +167,7 @@ export interface UpdateScheduleBlockRequest {
 /** Personal calendar events */
 
 export interface CalendarEventDto {
+  canvasCompleted?: boolean;
   canvasKind?: 'DEADLINE' | 'EVENT' | null;
   canvasUrl?: string | null;
   canvasStartDate?: string | null;

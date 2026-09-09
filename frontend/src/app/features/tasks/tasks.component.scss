@@ -353,3 +353,4 @@
     width: 100%;
   }
 }
+.tasks__event-item--completed strong { text-decoration: line-through; color: var(--prio-ink-soft); }
