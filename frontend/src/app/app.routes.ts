@@ -4,7 +4,6 @@ import { ShellComponent } from './layout/shell/shell.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', title: 'Prioritize — Make room for what matters', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
-  { path: 'demo', title: 'Explore Prioritize', loadComponent: () => import('./features/landing/demo.component').then(m => m.DemoComponent) },
   {
     path: 'auth/login',
     loadComponent: () =>

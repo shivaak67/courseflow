@@ -6,21 +6,15 @@ Personal productivity and planning platform. Organize work as Goals → Projects
 
 **Live app:** [theprioritize.com](https://theprioritize.com/)
 
-**Try it without an account:** [interactive demo](https://theprioritize.com/demo) · **Current release:** [main branch](https://github.com/shivaak67/prioritize/tree/main)
+**Current release:** [main branch](https://github.com/shivaak67/prioritize/tree/main)
 
-The landing page, dashboard, demo, and calendar captures were refreshed on September 9, 2026. The guided first-session capture uses a local fictional account; demo captures use fictional in-memory data. The existing tasks, Focus, and sign-in captures are from the live app on September 8, 2026.
+The landing page, dashboard, and calendar captures were refreshed on September 9, 2026. The guided first-session and calendar captures use a local fictional account. The existing tasks, Focus, and sign-in captures are from the live app on September 8, 2026.
 
 ### Public overview
 
-Understand the app and explore it before signing in.
+Learn how the app works, then sign in or create an account to plan your own day.
 
 ![Prioritize public landing page](docs/screenshots/landing.png)
-
-### Interactive demo
-
-Try sample tasks, calendar edits, and a Focus timer without creating an account. Changes reset when you leave or reload the demo.
-
-![Prioritize interactive demo with fictional sample tasks](docs/screenshots/demo.png)
 
 ### Guided first session
 
@@ -42,7 +36,7 @@ Create tasks with due dates and priorities, reserve calendar time, and filter ex
 
 ### Calendar
 
-Select a date to add a time block or select an existing task/event to edit it. This capture shows the public demo calendar with fictional data.
+Select a date to add a time block or select an existing task/event to edit it. These captures show the authenticated calendar using a local fictional account.
 
 ![Prioritize monthly calendar](docs/screenshots/calendar.png)
 
@@ -64,7 +58,7 @@ Prioritize helps you plan and execute work with a clear hierarchy: categories an
 ## Features
 
 - Email/password and Google OAuth authentication (JWT)
-- Public landing page and interactive demo with isolated fictional data
+- Public landing page with sign-in and account creation
 - Guided first session: task → calendar time block → Focus
 - Calendar creation and editing with date validation and failed-save recovery
 - Categories, goals, projects, and tasks (manual priority)
@@ -204,7 +198,7 @@ Stop with `Ctrl+C` or `docker compose down`. Add `-v` to also remove the databas
 
 GitHub Actions runs backend tests and the frontend production build on pull requests and pushes to `main` and `develop`. A separate job builds both Docker images to catch Dockerfile regressions. Pushes to `develop` that change application files also publish versioned images to GitHub Container Registry. Deployment selects a versioned image on the existing EC2 host.
 
-Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. The September 9 release passed 24 frontend tests, the production build, and browser checks for onboarding, calendar edits, demo isolation, and mobile layout.
+Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. The September 9 release passed 22 frontend tests, the production build, and browser checks for onboarding, calendar edits, and mobile layout.
 
 ## Deployment (AWS)
 

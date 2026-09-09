@@ -25,11 +25,8 @@ import { RouterLink } from '@angular/router';
           <div class="actions">
             <a class="primary" routerLink="/auth/register"
               >Start your own plan →</a
-            ><a class="secondary" routerLink="/demo"
-              >Try the interactive demo</a
             >
           </div>
-          <p class="note">Explore the demo without creating an account.</p>
         </div>
         <div
           class="preview"
@@ -61,7 +58,7 @@ import { RouterLink } from '@angular/router';
             <span>YOUR NEXT FOCUS SESSION</span><strong>25:00</strong
             ><span>One task. A fresh start.</span>
           </div>
-          <a routerLink="/demo">Make this example your own →</a>
+          <a routerLink="/auth/register">Create your own plan →</a>
         </div>
       </section>
       <section class="how">
@@ -96,7 +93,7 @@ import { RouterLink } from '@angular/router';
       </section>
       <section class="closing">
         <h2>Your next step can be a small one.</h2>
-        <a class="primary" routerLink="/demo">Explore a sample day →</a>
+        <a class="primary" routerLink="/auth/register">Start your own plan →</a>
       </section>
     </main>
     <footer>
