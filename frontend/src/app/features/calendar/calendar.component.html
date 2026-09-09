@@ -1,72 +1,200 @@
 <section class="page prio-page">
   <header class="page__header">
-    <div>
-      <p class="prio-kicker">Planning</p>
-      <h1 class="prio-title">Calendar</h1>
-      <p class="prio-lede">
-        See task due dates and time blocks on each day. Add time blocks from the Tasks page.
-      </p>
-    </div>
+    <p class="prio-kicker">Planning</p>
+    <h1 class="prio-title">Calendar</h1>
+    <p class="prio-lede">
+      Choose a day to make time. Select a task or time block to edit it.
+    </p>
   </header>
-
-  @if (error(); as message) {
-    <p class="cal__banner cal__banner--error" role="alert">{{ message }}</p>
+  @if (error()) {
+    <p class="cal__banner cal__banner--error" role="alert">
+      {{ error() }} <button type="button" (click)="reload()">Retry</button>
+    </p>
   }
-
-  @if (loading()) {
-    <p class="cal__banner">Loading calendar…</p>
-  } @else {
-    <div class="cal surface">
-      <div class="cal__head">
-        <div class="cal__nav">
-          <button mat-icon-button type="button" (click)="prevMonth()" aria-label="Previous month">
-            <mat-icon>chevron_left</mat-icon>
-          </button>
-          <h2>{{ monthLabel() }}</h2>
-          <button mat-icon-button type="button" (click)="nextMonth()" aria-label="Next month">
-            <mat-icon>chevron_right</mat-icon>
-          </button>
-        </div>
-        <span>
-          {{ monthItemCount() === 0 ? 'Nothing this month' : monthItemCount() + ' items this month' }}
-        </span>
+  @if (success()) {
+    <p class="cal__banner" role="status">{{ success() }}</p>
+  }
+  <div class="cal surface">
+    <div class="cal__head">
+      <div class="cal__nav">
+        <button
+          mat-icon-button
+          (click)="prevMonth()"
+          aria-label="Previous month"
+          [disabled]="saving()"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <h2>{{ monthLabel() }}</h2>
+        <button
+          mat-icon-button
+          (click)="nextMonth()"
+          aria-label="Next month"
+          [disabled]="saving()"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
       </div>
-
-      <div class="cal__weekdays">
-        @for (day of weekdays; track day) {
-          <span>{{ day }}</span>
-        }
-      </div>
-
-      <div class="cal__grid">
-        @for (cell of cells(); track cell.key) {
-          <div
-            class="cal__cell"
-            [class.cal__cell--muted]="!cell.inMonth"
-            [class.cal__cell--accent]="cell.chips.length > 0"
-            [class.cal__cell--today]="cell.isToday"
-          >
-            @if (cell.day != null) {
-              <span class="cal__day">{{ cell.day }}</span>
-              <div class="cal__chips">
-                @for (chip of cell.chips.slice(0, 3); track chip.id) {
-                  <span
-                    class="cal__chip"
-                    [class.cal__chip--event]="chip.kind === 'event'"
-                    [class.cal__chip--task]="chip.kind === 'task'"
-                    [attr.title]="chip.label"
-                  >
-                    {{ chip.label }}
-                  </span>
-                }
-                @if (cell.chips.length > 3) {
-                  <span class="cal__more">+{{ cell.chips.length - 3 }} more</span>
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
+      <span>{{
+        loading() ? "Loading…" : monthItemCount() + " scheduled entries"
+      }}</span>
     </div>
+    <div class="cal__weekdays">
+      @for (day of weekdays; track day) {
+        <span>{{ day }}</span>
+      }
+    </div>
+    <div class="cal__grid" [attr.aria-busy]="loading()">
+      @for (cell of cells(); track cell.key) {
+        <div
+          class="cal__cell"
+          [class.cal__cell--muted]="!cell.inMonth"
+          [class.cal__cell--accent]="cell.key === selectedDay()"
+          [class.cal__cell--today]="cell.isToday"
+        >
+          @if (cell.day != null) {
+            <button
+              type="button"
+              class="cal__day"
+              [disabled]="loading() || saving()"
+              (click)="selectDay(cell.key)"
+              [attr.aria-label]="'Plan ' + cell.key"
+              [attr.aria-pressed]="cell.key === selectedDay()"
+            >
+              {{ cell.day }}<span class="add-mark" aria-hidden="true">+</span>
+            </button>
+            <div class="cal__chips">
+              @for (chip of cell.chips.slice(0, 3); track chip.id) {
+                <button
+                  type="button"
+                  class="cal__chip"
+                  [class.cal__chip--event]="chip.kind === 'event'"
+                  [disabled]="loading() || saving()"
+                  (click)="editItem(chip, cell.key)"
+                  [attr.aria-label]="'Edit ' + chip.label"
+                >
+                  {{ chip.label }}
+                </button>
+              }
+              @if (cell.chips.length > 3) {
+                <button
+                  type="button"
+                  class="cal__more"
+                  (click)="selectDay(cell.key)"
+                  [disabled]="loading() || saving()"
+                >
+                  +{{ cell.chips.length - 3 }} more
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+    <p class="calendar-hint">
+      Task deadlines and time blocks use your local timezone.
+    </p>
+  </div>
+  @if (selectedDay(); as day) {
+    <section class="surface day-panel" aria-labelledby="day-title">
+      <div class="cal__head">
+        <h2 id="day-title" tabindex="-1">Your plan · {{ day }}</h2>
+        <button
+          mat-flat-button
+          type="button"
+          (click)="addBlock(day)"
+          [disabled]="saving() || loading()"
+        >
+          Add time block
+        </button>
+      </div>
+      @if (!selectedItems().length) {
+        <p>No tasks or time blocks yet. Reserve some time for what matters.</p>
+      }
+      <ul class="day-items">
+        @for (chip of selectedItems(); track chip.id) {
+          <li>
+            <button
+              type="button"
+              (click)="editItem(chip, day)"
+              [disabled]="saving() || loading()"
+            >
+              <span>{{ chip.kind === "task" ? "Task" : "Time block" }}</span>
+              {{ chip.label }} <span>Edit →</span>
+            </button>
+          </li>
+        }
+      </ul>
+      @if (editor()) {
+        <form (ngSubmit)="save()" class="calendar-editor">
+          <h3>
+            {{
+              editor() === "new"
+                ? "New time block"
+                : editor() === "task"
+                  ? "Edit task"
+                  : "Edit time block"
+            }}
+          </h3>
+          @if (formError()) {
+            <p role="alert" class="cal__banner--error">{{ formError() }}</p>
+          }
+          <fieldset [disabled]="saving()">
+            <label
+              >Title<input
+                name="calendarTitle"
+                [(ngModel)]="title"
+                required
+                maxlength="255"
+            /></label>
+            @if (editor() === "task") {
+              <label
+                >Due date<input
+                  type="date"
+                  name="calendarDue"
+                  [(ngModel)]="dueDate" /></label
+              ><label
+                >Due time (optional)<input
+                  type="time"
+                  name="calendarTime"
+                  [(ngModel)]="dueTime"
+              /></label>
+            } @else {
+              <label
+                >Start<input
+                  type="datetime-local"
+                  name="calendarStart"
+                  [(ngModel)]="startLocal"
+                  required /></label
+              ><label
+                >End<input
+                  type="datetime-local"
+                  name="calendarEnd"
+                  [(ngModel)]="endLocal"
+                  required
+              /></label>
+              @if (allDay) {
+                <p>
+                  This is an all-day event. The end marks when it stops
+                  appearing (exclusive).
+                </p>
+              }
+            }
+          </fieldset>
+          <div class="editor-actions">
+            <button mat-flat-button type="submit" [disabled]="saving()">
+              {{ saving() ? "Saving…" : "Save changes" }}</button
+            ><button
+              mat-stroked-button
+              type="button"
+              (click)="editor.set(null)"
+              [disabled]="saving()"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      }
+    </section>
   }
 </section>
