@@ -255,3 +255,5 @@ In Reminders, select individual items or use **Select all** to apply reminder ti
 Users without a Canvas connection see a dashboard setup card with three simple steps and a direct link to Settings.
 
 ![Select multiple assignments for reminders](docs/screenshots/reminder-selection.png)
+
+![Canvas setup for new users](docs/screenshots/canvas-welcome.png)
