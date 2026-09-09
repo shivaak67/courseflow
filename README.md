@@ -4,61 +4,81 @@ Personal productivity and planning platform. Organize work as Goals → Projects
 
 ## Screenshots
 
-**Live app:** [theprioritize.com](https://theprioritize.com/)
+**Live app:** [theprioritize.com](https://theprioritize.com/) · **Default branch / current release:** [main](https://github.com/shivaak67/prioritize/tree/main)
 
-**Current release:** [main branch](https://github.com/shivaak67/prioritize/tree/main)
-
-The landing page, dashboard, and calendar captures were refreshed on September 9, 2026. The guided first-session and calendar captures use a local fictional account. The existing tasks, Focus, and sign-in captures are from the live app on September 8, 2026.
-
-### Public overview
-
-Learn how the app works, then sign in or create an account to plan your own day.
-
-![Prioritize public landing page](docs/screenshots/landing.png)
-
-### Canvas calendar connection
-
-Connect a private Canvas Calendar Feed in Settings, then view read-only assignment deadlines and course events. These screenshots use a fictional local account and synthetic course data.
-
-![Prioritize Canvas connection settings](docs/screenshots/canvas-settings.png)
-
-![Prioritize Canvas assignment deadline details](docs/screenshots/canvas-calendar.png)
-
-### Guided first session
-
-Create a task, reserve time, and start Focus with that task selected. Progress preferences are saved per account in the current browser.
-
-![Prioritize first-session guide using a fictional local account](docs/screenshots/onboarding.png)
+Refreshed September 9, 2026. Authenticated pages show the current application running locally with a fictional account and synthetic tasks and Canvas data. The sign-in capture is from the live app. No private feed links or real account data are shown.
 
 ### Dashboard
 
-See upcoming deadlines, today's plan, weekly progress, and shortcuts to the AI assistant.
+See today's tasks and Canvas deadlines, weekly progress, and shortcuts to the AI assistant.
 
-![Prioritize dashboard with deadlines and weekly progress](docs/screenshots/dashboard.png)
+![Dashboard with today's plan and weekly progress](docs/screenshots/dashboard.jpg)
 
-### Tasks and time blocks
+### Canvas assignments
 
-Create tasks with due dates and priorities, reserve calendar time, and filter existing work.
+Imported assignments have their own section, separate from events and time blocks. Mark an assignment **Complete** or **Reopen** it. Completion is saved in Prioritize and survives feed refreshes; it does not submit work or change Canvas.
 
-![Prioritize task and time-block planning](docs/screenshots/tasks.png)
+![Canvas assignments with Complete and Reopen controls](docs/screenshots/canvas-assignments.jpg)
 
-### Calendar
+### Canvas discovery and setup
 
-Select a date to add a time block or select an existing task/event to edit it. These captures show the authenticated calendar using a local fictional account.
+A dashboard card helps new users discover the import. Settings walks them through **Canvas → Calendar → Calendar Feed**, timezone selection, and connection. No developer key is required.
 
-![Prioritize monthly calendar](docs/screenshots/calendar.png)
+![Canvas discovery card with three setup steps](docs/screenshots/canvas-welcome.jpg)
 
-![Prioritize selected-day task editor](docs/screenshots/calendar-edit.png)
+![Canvas Calendar Feed setup instructions](docs/screenshots/canvas-settings.jpg)
+
+### Tasks and calendar planning
+
+Create tasks with due dates and priorities, filter existing work, and reserve study time. The calendar brings personal tasks, editable time blocks, and imported Canvas deadlines together.
+
+![Task creation, time blocks, and task filters](docs/screenshots/tasks.jpg)
+
+![Calendar with tasks and Canvas assignments](docs/screenshots/calendar.jpg)
+
+<details>
+<summary>See time-block editing and Canvas assignment details</summary>
+
+![Editing a personal time block](docs/screenshots/calendar-edit.jpg)
+
+![Canvas assignment details and local completion status](docs/screenshots/canvas-calendar.jpg)
+
+</details>
+
+### Reminders
+
+Select several assignments or use **Select all** to schedule reminders together. **Clear history** clears recent activity from view while keeping pending reminders.
+
+![Selecting multiple Canvas assignments and events for reminders](docs/screenshots/reminder-selection.jpg)
+
+<details>
+<summary>See reminder history controls</summary>
+
+![Recent reminder activity with Clear history](docs/screenshots/reminder-history.jpg)
+
+</details>
 
 ### Focus timer
 
-Choose a study duration and review previously logged focus sessions.
+Choose a task and a study duration, then start a timed session or use the stopwatch to log focused work.
 
-![Prioritize focus timer and recent sessions](docs/screenshots/focus.png)
+![Focus timer with a selected task and session duration](docs/screenshots/focus.jpg)
 
-### Sign in
+### Getting started and public pages
 
-![Prioritize sign-in page](docs/screenshots/sign-in.png)
+The guided first session helps users create a task, reserve time, and start Focus. The public landing page introduces the app, and sign-in supports email/password and Google.
+
+<details>
+<summary>See the first-session guide, landing page, and sign-in</summary>
+
+![Guided first planning session](docs/screenshots/onboarding.jpg)
+
+![Prioritize public landing page](docs/screenshots/landing.jpg)
+
+![Prioritize sign-in with Google option](docs/screenshots/sign-in.jpg)
+
+</details>
+
 ## Overview
 
 Prioritize helps you plan and execute work with a clear hierarchy: categories and goals break into projects and tasks. You set manual priorities and schedule blocks yourself. Canvas Calendar Feed integration imports assignment deadlines and events into your calendar; it does not use the Canvas API or sync grades or submissions. There is no Google Calendar sync or automatic priority engine. The app also covers routines, reminders, notifications, time tracking, and insights. Power BI can connect separately for historical analytics.
@@ -253,7 +273,3 @@ The Tasks page separates Canvas assignments and Canvas events from personal time
 In Reminders, select individual items or use **Select all** to apply reminder times to multiple items. Partial failures remain selected for retry. **Clear history** hides sent, failed, and cancelled activity for your account while preserving pending/processing reminders and internal delivery records.
 
 Users without a Canvas connection see a dashboard setup card with three simple steps and a direct link to Settings.
-
-![Select multiple assignments for reminders](docs/screenshots/reminder-selection.png)
-
-![Canvas setup for new users](docs/screenshots/canvas-welcome.png)
