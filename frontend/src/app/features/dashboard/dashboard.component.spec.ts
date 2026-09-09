@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ApiService } from '../../core/api/api.service';
@@ -48,4 +49,10 @@ describe('Dashboard deadlines', () => {
     component.tasks.set([task('cancelled', '2026-09-02', 'CANCELLED'), task('done', '2026-09-02', 'COMPLETED')]);
     expect(component.weeklyProgress()).toEqual({ done: 1, total: 1, percent: 100 });
   });
-});
+  it('discovers Canvas for unconnected users and hides setup after connection', () => {
+    const api = TestBed.inject(ApiService);
+    api.getCanvasFeed = jasmine.createSpy().and.returnValue(of({ connected: false }));
+    spyOn(component, 'reload'); component.ngOnInit(); expect(component.canvasConnected()).toBeFalse();
+    api.getCanvasFeed = jasmine.createSpy().and.returnValue(of({ connected: true }));
+    component.ngOnInit(); expect(component.canvasConnected()).toBeTrue();
+  });});

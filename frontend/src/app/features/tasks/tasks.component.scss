@@ -136,9 +136,19 @@
 }
 
 .tasks__event-main strong {
+  overflow-wrap: anywhere;
   display: block;
   font-family: var(--prio-font-display);
   font-size: 1.15rem;
+}
+
+.tasks__event-item--canvas {
+  border-left-color: var(--prio-teal);
+  flex-wrap: wrap;
+}
+.tasks__event-item--canvas .tasks__event-tag {
+  color: var(--prio-teal-deep);
+  background: rgba(11, 110, 106, 0.12);
 }
 
 .tasks__event-main p {

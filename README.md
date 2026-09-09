@@ -207,7 +207,7 @@ Stop with `Ctrl+C` or `docker compose down`. Add `-v` to also remove the databas
 
 GitHub Actions runs backend tests and the frontend production build on pull requests and pushes to `main` and `develop`. A separate job builds both Docker images to catch Dockerfile regressions. Pushes to `develop` that change application files also publish versioned images to GitHub Container Registry. Deployment selects a versioned image on the existing EC2 host.
 
-Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. The Canvas release passed 28 frontend tests. Backend tests cover feed parsing, dates, encryption, URL restrictions, bounded downloads, duplicate prevention, failure preservation, and account isolation.
+Frontend behavior tests run with `npm test -- --watch=false --browsers=ChromeHeadless` from `frontend/`. Frontend tests cover assignment labels, time-block editing, bulk reminder selection, and clearing history. Backend tests cover feed parsing, dates, encryption, URL restrictions, bounded downloads, duplicate prevention, failure preservation, and account isolation.
 
 ## Connect Canvas
 
@@ -245,3 +245,13 @@ See [docs/multi-agent-workflow.md](docs/multi-agent-workflow.md).
 ## License
 
 TBD
+
+### Assignment and reminder controls
+
+The Tasks page separates Canvas assignments and Canvas events from personal time blocks. Assignment cards show a due date or due time, and personal time blocks support inline editing of title, start, end, and all-day status.
+
+In Reminders, select individual items or use **Select all** to apply reminder times to multiple items. Partial failures remain selected for retry. **Clear history** hides sent, failed, and cancelled activity for your account while preserving pending/processing reminders and internal delivery records.
+
+Users without a Canvas connection see a dashboard setup card with three simple steps and a direct link to Settings.
+
+![Select multiple assignments for reminders](docs/screenshots/reminder-selection.png)
