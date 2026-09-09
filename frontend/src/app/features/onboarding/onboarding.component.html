@@ -1,0 +1,83 @@
+@if (visible()) {
+  <section class="guide" aria-labelledby="guide-title">
+    <div class="guide-head">
+      <div>
+        <p class="eyebrow">A small start, a clearer day</p>
+        <h2 id="guide-title">Make your first plan</h2>
+      </div>
+      <button
+        type="button"
+        class="quiet"
+        (click)="guide.dismiss()"
+        [disabled]="busy()"
+      >
+        Do this later
+      </button>
+    </div>
+    <ol aria-label="Getting started progress">
+      <li [class.current]="step() === 1">1. Add a task</li>
+      <li [class.current]="step() === 2">2. Make time</li>
+      <li [class.current]="step() === 3">3. Start focusing</li>
+    </ol>
+    @if (error()) {
+      <p role="alert" class="error">{{ error() }}</p>
+    }
+    @if (step() === 1) {
+      <p>
+        Choose one thing you want to finish. You can organize the rest later.
+      </p>
+      <form (ngSubmit)="createTask()">
+        <label
+          >What do you want to finish?<input
+            name="firstTask"
+            [(ngModel)]="title"
+            maxlength="255"
+            required
+            placeholder="e.g. Review chapter 3" /></label
+        ><label
+          >Due date<input
+            name="firstDue"
+            type="date"
+            [(ngModel)]="dueDate"
+            required /></label
+        ><button class="primary" [disabled]="busy()">
+          {{ busy() ? "Saving…" : "Save task and continue" }}
+        </button>
+      </form>
+    } @else if (step() === 2) {
+      <p>
+        <strong>{{ task()?.title }}</strong> is saved. Reserve a little time to
+        work on it.
+      </p>
+      <form (ngSubmit)="schedule()">
+        <label
+          >Start<input
+            name="firstStart"
+            type="datetime-local"
+            [(ngModel)]="start"
+            required /></label
+        ><label
+          >End<input
+            name="firstEnd"
+            type="datetime-local"
+            [(ngModel)]="end"
+            required /></label
+        ><button class="primary" [disabled]="busy()">
+          {{ busy() ? "Saving…" : "Save time block" }}
+        </button>
+      </form>
+    } @else {
+      <h3>Your plan is ready.</h3>
+      <p>
+        Your task and time block are saved. Open Focus, choose a session length,
+        and press Start focus when you're ready.
+      </p>
+      <a
+        class="primary"
+        routerLink="/focus"
+        [queryParams]="{ task: task()?.id }"
+        >Open my focus timer →</a
+      >
+    }
+  </section>
+}

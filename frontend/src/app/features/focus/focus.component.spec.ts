@@ -3,13 +3,14 @@ import { Subject, of, throwError } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
 import { TaskDto, TimeEntryDto } from '../../core/api/api.models';
 import { FocusComponent } from './focus.component';
+import { OnboardingService } from '../onboarding/onboarding.service';
 
 describe('Focus session safeguards', () => {
   let component: FocusComponent;
   let api: jasmine.SpyObj<ApiService>;
   beforeEach(() => {
     api = jasmine.createSpyObj('ApiService', ['createTimeEntry']);
-    TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }] });
+    TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }, { provide: OnboardingService, useValue: { startedFocus: () => {} } }] });
     component = TestBed.runInInjectionContext(() => new FocusComponent());
     component.tasks.set([{ id: 'task', title: 'Study', status: 'TODO' } as TaskDto]);
     component.selectedTaskId.set('task');

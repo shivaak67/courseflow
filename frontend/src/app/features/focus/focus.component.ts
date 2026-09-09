@@ -8,7 +8,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
+import { OnboardingService } from '../onboarding/onboarding.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { forkJoin } from 'rxjs';
@@ -54,6 +55,8 @@ const MAX_CUSTOM_MINUTES = 180;
 })
 export class FocusComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly guide = inject(OnboardingService, { optional: true });
 
   readonly presets = PRESETS;
   readonly quickMinutes = QUICK_MINUTES;
@@ -179,6 +182,8 @@ export class FocusComponent implements OnInit, OnDestroy {
         this.timeEntries.set(timeEntries);
         this.loading.set(false);
 
+        const requested = this.route?.snapshot.queryParamMap.get('task');
+        if (!this.selectedTaskId() && requested && tasks.some(t => t.id === requested && (t.status === 'TODO' || t.status === 'IN_PROGRESS'))) this.selectedTaskId.set(requested);
         if (!this.selectedTaskId()) {
           const first = tasks.find(
             (task) => task.status === 'TODO' || task.status === 'IN_PROGRESS',
@@ -267,6 +272,7 @@ export class FocusComponent implements OnInit, OnDestroy {
     }
 
     this.phase.set('running');
+    this.guide?.startedFocus(this.selectedTaskId());
     this.startTimer();
   }
 
