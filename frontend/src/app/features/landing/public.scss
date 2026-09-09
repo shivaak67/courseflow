@@ -91,7 +91,6 @@ h3 {
   margin-top: 28px;
 }
 .primary,
-.secondary,
 button {
   display: inline-block;
   border-radius: 8px;
@@ -105,13 +104,6 @@ button {
   background: #244f42;
   color: white;
   border: 1px solid #244f42;
-}
-.secondary {
-  border: 1px solid #b8c9b9;
-}
-.note {
-  font-size: 12px;
-  color: #68786b;
 }
 .preview {
   background: white;
@@ -224,104 +216,6 @@ footer div {
   display: flex;
   gap: 22px;
 }
-.demo-header {
-  padding: 36px 0 22px;
-}
-.demo-header h1 {
-  font-size: 44px;
-}
-.demo-banner {
-  padding: 14px 18px;
-  background: #e7eedd;
-  border-radius: 9px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.demo-tabs {
-  display: flex;
-  gap: 10px;
-  margin: 24px 0;
-  flex-wrap: wrap;
-}
-.demo-tabs button {
-  background: transparent;
-  color: #244f42;
-}
-.demo-tabs button.active {
-  background: #244f42;
-  color: white;
-}
-.demo-body {
-  background: white;
-  border: 1px solid #dce4da;
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 40px;
-}
-.task-row {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  padding: 20px 0;
-  border-bottom: 1px solid #e5eade;
-}
-.task-row div {
-  flex: 1;
-}
-.task-row small {
-  display: block;
-  margin-top: 5px;
-  color: #6d7b6a;
-}
-.task-row input {
-  width: 20px;
-  height: 20px;
-  accent-color: #244f42;
-}
-.done {
-  text-decoration: line-through;
-  color: #83907e;
-}
-.task-form {
-  display: flex;
-  gap: 12px;
-  margin: 24px 0;
-  flex-wrap: wrap;
-}
-.task-form input {
-  flex: 1;
-  min-width: 160px;
-  padding: 14px;
-  border: 1px solid #b9c9b8;
-  border-radius: 8px;
-  font: inherit;
-}
-.demo-focus {
-  text-align: center;
-  padding: 30px;
-}
-.timer {
-  font-family: Georgia, serif;
-  font-size: 80px;
-  margin: 30px;
-}
-.demo-focus button {
-  margin: 6px;
-}
-.demo-focus select {
-  padding: 12px;
-  max-width: 100%;
-  border-radius: 8px;
-  border: 1px solid #b9c9b8;
-}
-.demo-focus label {
-  display: block;
-  margin: 15px;
-}
-.demo-status {
-  color: #56734e;
-  font-size: 13px;
-}
 @media (max-width: 760px) {
   .public-page {
     padding: 0 20px;
@@ -350,12 +244,6 @@ footer div {
   }
   nav {
     padding: 22px 0;
-  }
-  .demo-body {
-    padding: 12px;
-  }
-  .demo-header h1 {
-    font-size: 36px;
   }
   footer {
     align-items: flex-start;
