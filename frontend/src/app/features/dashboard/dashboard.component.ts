@@ -128,10 +128,10 @@ export class DashboardComponent implements OnInit {
       items.push({
         id: `event-${event.id}`,
         kind: 'event',
-        time: event.allDay ? 'All day' : formatTime(start),
-        endTime: event.allDay ? undefined : formatTime(end),
+        time: (event.canvasKind === 'DEADLINE' ? 'Due ' : '') + (event.allDay ? 'All day' : formatTime(start)),
+        endTime: event.allDay || event.canvasKind === 'DEADLINE' ? undefined : formatTime(end),
         title: event.title,
-        subtitle: event.description ?? undefined,
+        subtitle: event.canvasKind === 'DEADLINE' ? 'Canvas assignment' : event.description ?? undefined,
         sortKey: event.allDay ? 0 : start.getTime(),
       });
     }
@@ -223,7 +223,7 @@ export class DashboardComponent implements OnInit {
         title: event.title,
         when: event.allDay
           ? relativeDueLabel(dayKey)
-          : `${relativeDueLabel(dayKey)} · ${formatTimeRange(start, end)}`,
+          : `${relativeDueLabel(dayKey)} · ${event.canvasKind === 'DEADLINE' ? 'Due ' + formatTime(start) : formatTimeRange(start, end)}`,
         sortKey: start.getTime(),
         route: '/calendar',
         overdue: false,
