@@ -13,6 +13,8 @@ import com.prioritize.model.CalendarEvent;
 
 public interface CalendarEventRepository extends JpaRepository<CalendarEvent, UUID> {
 
+    List<CalendarEvent> findByUserIdAndCanvasKeyIsNotNull(UUID userId);
+
     Optional<CalendarEvent> findByIdAndUserId(UUID id, UUID userId);
 
     List<CalendarEvent> findByUserIdOrderByStartAtAsc(UUID userId);

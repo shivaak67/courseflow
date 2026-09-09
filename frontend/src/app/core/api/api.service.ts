@@ -7,6 +7,7 @@ import {
   AssistantChatResponse,
   AssistantStatusResponse,
   CalendarEventDto,
+  CanvasFeedStatus,
   CategoryDto,
   CreateCalendarEventRequest,
   CreateCategoryRequest,
@@ -50,6 +51,18 @@ import {
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiBaseUrl;
+  getCanvasFeed(): Observable<CanvasFeedStatus> {
+    return this.http.get<CanvasFeedStatus>(`${this.base}/api/integrations/canvas`);
+  }
+  connectCanvasFeed(feedUrl: string, timezone: string): Observable<CanvasFeedStatus> {
+    return this.http.put<CanvasFeedStatus>(`${this.base}/api/integrations/canvas`, { feedUrl, timezone });
+  }
+  syncCanvasFeed(): Observable<CanvasFeedStatus> {
+    return this.http.post<CanvasFeedStatus>(`${this.base}/api/integrations/canvas/sync`, {});
+  }
+  disconnectCanvasFeed(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/integrations/canvas`);
+  }
 
   // --- Categories ---
 

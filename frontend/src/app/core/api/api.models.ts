@@ -1,4 +1,13 @@
 /** Planning-core entities (Category / Goal / Project / Task) */
+export interface CanvasFeedStatus {
+  connected: boolean;
+  host: string | null;
+  timezone: string | null;
+  lastSyncedAt: string | null;
+  nextSyncAt: string | null;
+  itemCount: number;
+  error: string | null;
+}
 
 export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ARCHIVED';
 export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ARCHIVED';
@@ -158,6 +167,10 @@ export interface UpdateScheduleBlockRequest {
 /** Personal calendar events */
 
 export interface CalendarEventDto {
+  canvasKind?: 'DEADLINE' | 'EVENT' | null;
+  canvasUrl?: string | null;
+  canvasStartDate?: string | null;
+  canvasEndDate?: string | null;
   id: string;
   title: string;
   description: string | null;

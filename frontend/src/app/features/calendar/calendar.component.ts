@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { localInput, validLocal } from '../../shared/planning-time';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,6 +24,7 @@ export interface CalendarChip {
   label: string;
   entityId: string;
   kind: 'task' | 'event';
+  canvasKind?: 'DEADLINE' | 'EVENT' | null;
 }
 
 export interface CalendarCell {
@@ -35,7 +38,7 @@ export interface CalendarCell {
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [FormsModule, MatButtonModule, MatIconModule],
+  imports: [FormsModule, MatButtonModule, MatIconModule, DatePipe, RouterLink],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.scss',
 })
@@ -74,6 +77,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   );
 
   readonly selectedDay = signal<string | null>(null);
+  readonly canvasDetail = signal<CalendarEventDto | null>(null);
   readonly editor = signal<'new' | 'event' | 'task' | null>(null);
   readonly saving = signal(false);
   readonly formError = signal('');
@@ -125,6 +129,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
   private moveMonth(offset: number): void {
     if (this.saving()) return;
+    this.canvasDetail.set(null);
     const current = this.viewMonth();
     this.viewMonth.set(
       new Date(current.getFullYear(), current.getMonth() + offset, 1),
@@ -135,6 +140,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
   selectDay(key: string): void {
     if (this.saving() || this.loading()) return;
+    this.canvasDetail.set(null);
     this.selectedDay.set(key);
     this.editor.set(null);
     this.formError.set('');
@@ -143,6 +149,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
   addBlock(key: string): void {
     if (this.saving()) return;
+    this.canvasDetail.set(null);
     this.selectedDay.set(key);
     this.title = '';
     this.entityId = '';
@@ -156,6 +163,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
   editItem(chip: CalendarChip, day: string): void {
     if (this.saving() || this.loading()) return;
+    this.canvasDetail.set(null);
     this.selectedDay.set(day);
     this.formError.set('');
     this.success.set('');
@@ -163,6 +171,12 @@ export class CalendarComponent implements OnInit, OnDestroy {
     if (chip.kind === 'event') {
       const event = this.events().find((e) => e.id === chip.entityId);
       if (!event) return;
+      if (event.canvasKind) {
+        this.canvasDetail.set(event);
+        this.editor.set(null);
+        this.revealPanel();
+        return;
+      }
       this.title = event.title;
       this.allDay = event.allDay;
       this.startLocal = localInput(new Date(event.startAt));
@@ -344,6 +358,7 @@ function buildMonthCells(
         id: `event-${event.id}-${key}`,
         label: event.title,
         kind: 'event',
+        canvasKind: event.canvasKind,
         entityId: event.id,
       });
     }
@@ -378,6 +393,16 @@ function buildMonthCells(
 }
 
 export function eventDayKeys(event: CalendarEventDto): string[] {
+  if (event.canvasStartDate && event.canvasEndDate) {
+    const keys: string[] = [];
+    let cursor = event.canvasStartDate;
+    while (cursor < event.canvasEndDate && keys.length < 400) {
+      keys.push(cursor);
+      const [year, month, day] = cursor.split('-').map(Number);
+      cursor = toLocalDateKey(new Date(year, month - 1, day + 1));
+    }
+    return keys;
+  }
   const start = new Date(event.startAt),
     end = new Date(event.endAt);
   if (
