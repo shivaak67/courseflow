@@ -66,14 +66,14 @@ Choose a task and a study duration, then start a timed session or use the stopwa
 
 ### Getting started and public pages
 
-The guided first session helps users create a task, reserve time, and start Focus. The public landing page introduces the app, and sign-in supports email/password and Google.
+The guided first session helps users create a task, reserve time, and start Focus. The home URL opens your dashboard when signed in, or sign-in when signed out. Sign-in supports email/password and Google.
 
 <details>
-<summary>See the first-session guide, landing page, and sign-in</summary>
+<summary>See the first-session guide and sign-in</summary>
 
 ![Guided first planning session](docs/screenshots/onboarding.jpg)
 
-![Prioritize public landing page](docs/screenshots/landing.jpg)
+
 
 ![Prioritize sign-in with Google option](docs/screenshots/sign-in.jpg)
 
@@ -86,7 +86,7 @@ Prioritize helps you plan and execute work with a clear hierarchy: categories an
 ## Features
 
 - Email/password and Google OAuth authentication (JWT)
-- Public landing page with sign-in and account creation
+- Direct entry to dashboard or sign-in, with account creation and Google sign-in
 - Guided first session: task → calendar time block → Focus
 - Calendar creation and editing with date validation and failed-save recovery
 - Canvas Calendar Feed connection: read-only deadlines/events, automatic refresh, and manual sync
