@@ -3,7 +3,6 @@ import { authGuard } from './core/guards/auth.guard';
 import { ShellComponent } from './layout/shell/shell.component';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', title: 'Prioritize — Make room for what matters', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
   {
     path: 'auth/login',
     loadComponent: () =>
