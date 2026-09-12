@@ -254,18 +254,6 @@ This is the live topology verified on September 9, 2026. EBS persistence is sepa
 
 Power BI connects to PostgreSQL for completion rates, workload trends, and estimated vs actual time. Angular remains the interactive app UI.
 
-## Roadmap
-
-See [docs/architecture.md](docs/architecture.md) for MVP vs later and development phases.
-
-## Multi-agent development
-
-See [docs/multi-agent-workflow.md](docs/multi-agent-workflow.md).
-
-## License
-
-TBD
-
 ### Assignment and reminder controls
 
 The Tasks page separates Canvas assignments and Canvas events from personal time blocks. Assignment cards show a due date or due time, and personal time blocks support inline editing of title, start, end, and all-day status.
